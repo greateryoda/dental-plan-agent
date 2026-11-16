@@ -1,0 +1,1164 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}</style></head><body><title>Dental Plan Agent</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: chairside workbench. Dictation rail on the left, the living plan document on the right. */
+:root {
+  --bg:#eef3f3; --surface:#ffffff; --ink:#0f2a2e; --muted:#5a7074; --line:#d5e0e1;
+  --accent:#0b7a75; --accent-ink:#ffffff; --accent-soft:#dcefed;
+  --amber:#a86400; --amber-soft:#fbeed6; --danger:#b3412f; --danger-soft:#f8e1dc;
+  --s1:#0b7a75; --s2:#3f6fb5; --s3:#a86400; --s4:#8a4fa8; --s5:#b3412f;
+  --sans:"IBM Plex Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#0b1618; --surface:#122326; --ink:#e2eded; --muted:#90a6a9; --line:#24393c;
+  --accent:#3dbdb3; --accent-ink:#04201e; --accent-soft:#123a38;
+  --amber:#e8a540; --amber-soft:#3a2b13; --danger:#ef8a76; --danger-soft:#3d1f19;
+  --s1:#3dbdb3; --s2:#7ea6e6; --s3:#e8a540; --s4:#c18ee0; --s5:#ef8a76; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg:#0b1618; --surface:#122326; --ink:#e2eded; --muted:#90a6a9; --line:#24393c;
+  --accent:#3dbdb3; --accent-ink:#04201e; --accent-soft:#123a38;
+  --amber:#e8a540; --amber-soft:#3a2b13; --danger:#ef8a76; --danger-soft:#3d1f19;
+  --s1:#3dbdb3; --s2:#7ea6e6; --s3:#e8a540; --s4:#c18ee0; --s5:#ef8a76; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.doc table { table-layout: fixed; }
+.doc th:nth-child(1) { width: 38%; } .doc th:nth-child(2) { width: 12%; } .doc th:nth-child(3) { width: 6%; } .doc th:nth-child(4) { width: 14%; } .doc th:nth-child(5) { width: 16%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 14px; line-height: 1.5; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+h1 { font-size: 24px; letter-spacing: -0.4px; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 2px 0 0; max-width: 62ch; }
+.badge { font-family: var(--mono); font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; background: var(--surface); white-space: nowrap; }
+.grid { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.panel + .panel { margin-top: 14px; }
+.label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+button { font: inherit; cursor: pointer; }
+button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chip { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 4px 11px; font-size: 13px; }
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+textarea, input[type=text] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+textarea { min-height: 220px; resize: vertical; font-size: 13.5px; }
+.partial { color: var(--muted); font-style: italic; min-height: 1.4em; font-size: 13px; margin: 4px 2px 0; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 9px 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.amber { background: var(--amber); border-color: var(--amber); color: var(--surface); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.mic { width: 40px; height: 40px; border-radius: 50%; padding: 0; justify-content: center; }
+.mic.live { background: var(--danger); border-color: var(--danger); color: #fff; animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px var(--danger-soft); } }
+@media (prefers-reduced-motion: reduce) { .mic.live { animation: none; } .step.run .dot { animation: none !important; } }
+.hint { color: var(--muted); font-size: 12.5px; }
+.steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 14px; }
+.step { text-align: center; font-size: 11.5px; color: var(--muted); }
+.step .dot { height: 4px; border-radius: 2px; background: var(--line); margin-bottom: 5px; }
+.step.done .dot { background: var(--accent); }
+.step.done { color: var(--ink); }
+.step.run .dot { background: var(--amber); animation: blink 1s ease-in-out infinite; }
+.step.run { color: var(--amber); font-weight: 600; }
+@keyframes blink { 50% { opacity: .35; } }
+.msg { margin-top: 10px; font-size: 13px; padding: 8px 10px; border-radius: 8px; background: var(--danger-soft); color: var(--ink); }
+.example { font-size: 12.5px; background: var(--amber-soft); color: var(--ink); padding: 7px 10px; border-radius: 8px; margin-bottom: 12px; }
+
+/* summary */
+.versions { display: flex; gap: 6px; flex-wrap: wrap; }
+.vtab { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 6px; padding: 3px 10px; font-family: var(--mono); font-size: 12.5px; }
+.vtab[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+@media (max-width: 620px) { .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { background: var(--bg); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+.kpi .k { font-size: 11.5px; color: var(--muted); }
+.kpi .v { font-family: var(--mono); font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.kpi .v.amber { color: var(--amber); }
+
+/* odontogram */
+.odo-wrap { overflow-x: auto; margin-top: 14px; }
+.odo { display: grid; grid-template-columns: repeat(16, 30px); gap: 3px; width: max-content; }
+.odo .t { height: 30px; border: 1px solid var(--line); border-radius: 6px 6px 9px 9px; font-family: var(--mono); font-size: 10.5px; display: flex; align-items: center; justify-content: center; color: var(--muted); background: var(--surface); }
+.odo .t.lower { border-radius: 9px 9px 6px 6px; }
+.odo .t.mid { margin-right: 8px; }
+.odo .t.on { color: #fff; border-color: transparent; font-weight: 500; }
+.odo .gap { grid-column: 1 / -1; height: 4px; border-top: 1px dashed var(--line); margin-top: 3px; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+/* questions */
+.qpanel { border-color: var(--amber); }
+.qhead { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.q { border-top: 1px solid var(--line); padding: 12px 0; }
+.q:first-of-type { border-top: 0; }
+.q .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 11.5px; color: var(--muted); }
+.tag { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--amber-soft); color: var(--amber); }
+.tag.rule { background: var(--accent-soft); color: var(--accent); }
+.stake { font-family: var(--mono); color: var(--amber); }
+.q .text { font-weight: 600; margin: 4px 0 2px; }
+.q .why { color: var(--muted); font-size: 12.5px; margin-bottom: 8px; }
+.opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.opt { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 8px; padding: 6px 10px; font-size: 13px; text-align: left; }
+.opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.opt small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+.other { margin-top: 6px; }
+.other input { padding: 6px 10px; font-size: 13px; }
+
+/* document */
+.doc { overflow-x: auto; }
+.doc h3 { font-size: 15px; margin: 18px 0 2px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.doc h3 .when { font-size: 12px; font-weight: 500; color: var(--muted); }
+.sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px; }
+th { text-align: left; font-size: 11.5px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); padding: 6px; }
+td { border-bottom: 1px solid var(--line); padding: 7px 6px; vertical-align: top; }
+td.n, th.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td .ev { display: block; color: var(--muted); font-size: 11.5px; font-style: italic; }
+td .code { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+tr.assumed td { background: var(--amber-soft); }
+tr.unpriced td { background: var(--danger-soft); }
+tr.changed td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.st { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--amber); }
+.st.unp { color: var(--danger); }
+.st.chg { color: var(--accent); }
+.engine { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin:10px 0 0; font-size:12.5px; color:var(--muted); }
+.sub-row td { font-weight: 600; border-bottom: 0; }
+.notes { margin-top: 16px; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.note { background: var(--bg); border-radius: 8px; padding: 10px 12px; font-size: 13px; min-width: 0; }
+.note ul { margin: 4px 0 0; padding-left: 18px; }
+.empty { color: var(--muted); padding: 30px 0; text-align: center; }
+details.how { margin-top: 14px; font-size: 13px; color: var(--muted); }
+details.how summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+details.how ol { padding-left: 18px; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Dental Plan Agent</h1>
+      <p class="sub">Dictate a treatment plan. The agent maps it to the clinic price list, prices every stage, asks what is unclear and regenerates the PDF from your answers.</p>
+    </div>
+    <span class="badge" id="catBadge">Price list · 208 services · EUR</span>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: dictation -->
+    <div>
+      <section class="panel" aria-labelledby="dictLbl">
+        <p class="label" id="dictLbl">1 · Dictation</p>
+        <div class="chips" id="samples" role="group" aria-label="Sample dentist notes"></div>
+        <textarea id="note" aria-label="Dictation text" placeholder="Press the microphone and dictate, or type the plan here…"></textarea>
+        <p class="partial" id="partial" aria-live="polite"></p>
+        <div class="row">
+          <button class="btn mic" id="micBtn" title="Dictate" aria-label="Start dictation" hidden>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          </button>
+          <button class="btn primary" id="buildBtn">Build treatment plan</button>
+          <button class="btn" id="clearBtn">Clear</button>
+        </div>
+        <p class="hint" id="micHint" style="margin-top:8px"><span id="micLabel"></span></p>
+        <div class="engine" id="engineRow" hidden role="group" aria-label="Engine"><span>Engine:</span><button class="chip" data-engine="local" aria-pressed="true">Built-in rules</button><button class="chip" data-engine="claude" aria-pressed="false">Claude AI</button></div>
+        <div class="steps" id="steps" aria-label="Pipeline progress"></div>
+        <div class="msg" id="err" hidden></div>
+      </section>
+
+      <section class="panel">
+        <p class="label">How it works</p>
+        <ol class="hint" style="padding-left:18px;margin:0">
+          <li><b>Speak or type.</b> Voice uses your browser's speech recognition (Chrome, Edge). No account needed.</li>
+          <li><b>The plan reader</b> splits the dictation into stages, services, teeth (FDI), quantities, prices, discounts and programmes, and maps every service to the 208-item price list.</li>
+          <li><b>Rule checks</b> catch what doesn't add up: lower-jaw sinus lifts, more crowns than implants, conflicting prices, missing implant systems, “with discount” with no amount.</li>
+          <li><b>The pricing engine</b> adds everything up. Your answers update the plan and regenerate the PDF as a new version with a change log.</li>
+        </ol>
+      </section>
+    </div>
+
+    <!-- RIGHT: plan -->
+    <div>
+      <section class="panel" id="sumPanel">
+        <div class="qhead">
+          <div>
+            <p class="label" style="margin:0">2 · Treatment plan</p>
+            <div style="font-size:17px;font-weight:600" id="patientName">–</div>
+            <div class="hint" id="patientNote"></div>
+          </div>
+          <div class="row">
+            <div class="versions" id="versions" role="group" aria-label="Plan versions"></div>
+            <button class="btn primary" id="pdfBtn">Download PDF</button>
+          </div>
+        </div>
+        <div class="example" id="exampleBanner" hidden>Patient 3 is loaded as an example. Pick another patient, or dictate your own note, and press <b>Build treatment plan</b>.</div>
+        <div class="summary" id="summary"></div>
+        <div class="odo-wrap"><div class="odo" id="odo" aria-label="Teeth involved (FDI)"></div></div>
+        <div class="legend" id="legend"></div>
+        <p class="hint" id="pdfHint" hidden></p>
+      </section>
+
+      <section class="panel qpanel" id="qPanel" hidden>
+        <div class="qhead">
+          <p class="label" style="margin:0;color:var(--amber)">3 · Clarifying questions</p>
+          <span class="hint" id="qCount"></span>
+        </div>
+        <p class="hint" id="qIntro"></p>
+        <div id="qList"></div>
+        <div class="other">
+          <label class="hint" for="extra">Anything else to change? (optional)</label>
+          <div class="row" style="flex-wrap:nowrap">
+            <input type="text" id="extra" placeholder="e.g. add a surgical guide for 3–4 implants">
+            <button class="btn mic" id="micBtn2" aria-label="Dictate an extra instruction" hidden>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn amber" id="regenBtn">Apply answers &amp; regenerate PDF</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <p class="label">Plan document</p>
+        <div class="doc" id="doc"><div class="empty">No plan yet.</div></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+"use strict";
+const CATALOG = [{"id": "RES-01", "name": "Single-use hygiene kit", "section": "Restorative dentistry (treatment)", "price": 3.19}, {"id": "RES-02", "name": "Core build-up of a molar for a prosthetic restoration", "section": "Restorative dentistry (treatment)", "price": 23.89}, {"id": "RES-03", "name": "Core build-up of an anterior tooth for a prosthetic restoration", "section": "Restorative dentistry (treatment)", "price": 30.86}, {"id": "RES-04", "name": "Additional glass-fibre post", "section": "Restorative dentistry (treatment)", "price": 8.36}, {"id": "RES-05", "name": "Internal tooth bleaching", "section": "Restorative dentistry (treatment)", "price": 34.85}, {"id": "RES-06", "name": "Local anaesthesia", "section": "Restorative dentistry (treatment)", "price": 4.18}, {"id": "RES-07", "name": "Removal of a metal crown", "section": "Restorative dentistry (treatment)", "price": 6.17}, {"id": "RES-08", "name": "Removal of a metal-ceramic / cast crown", "section": "Restorative dentistry (treatment)", "price": 8.56}, {"id": "RES-09", "name": "Rubber dam placement", "section": "Restorative dentistry (treatment)", "price": 4.18}, {"id": "RES-10", "name": "Placement of devitalising paste", "section": "Restorative dentistry (treatment)", "price": 12.35}, {"id": "RES-11", "name": "Fluoride varnish application, 1 tooth", "section": "Restorative dentistry (treatment)", "price": 4.18}, {"id": "RES-12", "name": "Fluoride varnish application, 1 segment (6 teeth)", "section": "Restorative dentistry (treatment)", "price": 8.36}, {"id": "RES-13", "name": "Extended consultation", "section": "Restorative dentistry (treatment)", "price": 9.36}, {"id": "RES-14", "name": "Dental radiograph", "section": "Restorative dentistry (treatment)", "price": 4.18}, {"id": "RES-15", "name": "Restoration of a molar, 1 surface", "section": "Restorative dentistry (treatment)", "price": 29.87}, {"id": "RES-16", "name": "Restoration of a single-surface molar", "section": "Restorative dentistry (treatment)", "price": 39.03}, {"id": "RES-17", "name": "Restoration of a two-surface molar", "section": "Restorative dentistry (treatment)", "price": 49.38}, {"id": "RES-18", "name": "Restoration of an anterior tooth, 1 surface", "section": "Restorative dentistry (treatment)", "price": 34.85}, {"id": "RES-19", "name": "Restoration of a single-surface anterior tooth", "section": "Restorative dentistry (treatment)", "price": 45.2}, {"id": "RES-20", "name": "Two-surface restoration of an anterior tooth", "section": "Restorative dentistry (treatment)", "price": 57.74}, {"id": "RES-21", "name": "Glass-fibre post cementation", "section": "Restorative dentistry (treatment)", "price": 12.35}, {"id": "RES-22", "name": "Core build-up for a prosthetic restoration with a deep subgingival defect", "section": "Restorative dentistry (treatment)", "price": 30.86}, {"id": "RES-23", "name": "Additional local anaesthetic cartridge", "section": "Restorative dentistry (treatment)", "price": 2.19}, {"id": "RES-24", "name": "Temporary build-up", "section": "Restorative dentistry (treatment)", "price": 10.35}, {"id": "RES-25", "name": "Aesthetic restoration", "section": "Restorative dentistry (treatment)", "price": 67.7}, {"id": "RES-26", "name": "Bonding of onlay + bar", "section": "Restorative dentistry (treatment)", "price": 16.53}, {"id": "RES-27", "name": "Clinical photo documentation", "section": "Restorative dentistry (treatment)", "price": 4.18}, {"id": "RES-28", "name": "Additional reinforcement of tooth walls with Ever X composite", "section": "Restorative dentistry (treatment)", "price": 13.34}, {"id": "RES-29", "name": "Complex aesthetic restoration", "section": "Restorative dentistry (treatment)", "price": 92.39}, {"id": "RES-30", "name": "Root canal disobturation", "section": "Restorative dentistry (treatment)", "price": 47.19}, {"id": "RES-31", "name": "Pre-operative professional hygiene", "section": "Restorative dentistry (treatment)", "price": 14.34}, {"id": "RES-32", "name": "Polishing of a restoration placed elsewhere", "section": "Restorative dentistry (treatment)", "price": 11.95}, {"id": "RES-33", "name": "Biomodel fabrication (laboratory fee)", "section": "Restorative dentistry (treatment)", "price": 35.04}, {"id": "PER-01", "name": "Periodontal consultation and initial periodontal charting", "section": "Periodontics", "price": 16.53}, {"id": "PER-02", "name": "Single-use periodontal kit", "section": "Periodontics", "price": 3.19}, {"id": "PER-03", "name": "Professional hygiene", "section": "Periodontics", "price": 41.02}, {"id": "PER-04", "name": "Partial professional hygiene", "section": "Periodontics", "price": 22.7}, {"id": "PER-05", "name": "Removal of dental deposits around one tooth", "section": "Periodontics", "price": 4.18}, {"id": "PER-06", "name": "Splinting of one tooth", "section": "Periodontics", "price": 7.17}, {"id": "PER-07", "name": "Splinting of a mobile tooth with composite", "section": "Periodontics", "price": 9.36}, {"id": "PER-08", "name": "Local anaesthesia", "section": "Periodontics", "price": 4.18}, {"id": "PER-09", "name": "Additional local anaesthetic cartridge", "section": "Periodontics", "price": 2.19}, {"id": "PER-10", "name": "Excision of overgrown gingival tissue", "section": "Periodontics", "price": 7.17}, {"id": "PER-11", "name": "Scaling", "section": "Periodontics", "price": 162.08}, {"id": "PER-12", "name": "Repeat curettage", "section": "Periodontics", "price": 22.7}, {"id": "PER-13", "name": "Soft-tissue augmentation (at implant placement or second-stage surgery)", "section": "Periodontics", "price": 140.0}, {"id": "PER-14", "name": "Vestibuloplasty (3–6 teeth)", "section": "Periodontics", "price": 260.0}, {"id": "PER-15", "name": "Treatment of a single gingival recession", "section": "Periodontics", "price": 210.0}, {"id": "PER-16", "name": "Treatment of multiple gingival recessions (3–6 teeth)", "section": "Periodontics", "price": 340.0}, {"id": "PER-17", "name": "Follow-up periodontal charting", "section": "Periodontics", "price": 13.34}, {"id": "PER-18", "name": "Scaling and root planing (SRP), one tooth", "section": "Periodontics", "price": 6.17}, {"id": "PER-19", "name": "Scaling and root planing (SRP), one jaw", "section": "Periodontics", "price": 78.05}, {"id": "PER-20", "name": "Periodontal follow-up examination with charting, 3–6 months after treatment", "section": "Periodontics", "price": 12.35}, {"id": "PER-21", "name": "Open curettage at one tooth, without bone grafting material", "section": "Periodontics", "price": 14.34}, {"id": "PER-22", "name": "Irrigation of periodontal pocket with suppuration", "section": "Periodontics", "price": 2.19}, {"id": "PER-23", "name": "Root canal disobturation", "section": "Periodontics", "price": 47.19}, {"id": "PER-24", "name": "Partial pre-operative professional hygiene", "section": "Periodontics", "price": 7.17}, {"id": "END-01", "name": "Pulp amputation with MTA placement", "section": "Endodontics", "price": 24.69}, {"id": "END-02", "name": "Removal of an anchor post", "section": "Endodontics", "price": 14.34}, {"id": "END-03", "name": "Removal of a metal inlay", "section": "Endodontics", "price": 24.69}, {"id": "END-04", "name": "Endodontic re-treatment (incisors and canines)", "section": "Endodontics", "price": 69.69}, {"id": "END-05", "name": "Endodontic re-treatment (premolars)", "section": "Endodontics", "price": 89.6}, {"id": "END-06", "name": "Endodontic re-treatment (molars)", "section": "Endodontics", "price": 109.51}, {"id": "END-07", "name": "Removal of a separated instrument from the root canal", "section": "Endodontics", "price": 51.37}, {"id": "END-08", "name": "Perforation repair with MTA", "section": "Endodontics", "price": 20.51}, {"id": "END-09", "name": "Local anaesthesia", "section": "Endodontics", "price": 4.18}, {"id": "END-10", "name": "Root canal treatment — anterior teeth (incisors and canines)", "section": "Endodontics", "price": 49.78}, {"id": "END-11", "name": "Root canal treatment — premolars", "section": "Endodontics", "price": 69.69}, {"id": "END-12", "name": "Root canal treatment — molars", "section": "Endodontics", "price": 89.6}, {"id": "END-13", "name": "Placement of devitalising paste", "section": "Endodontics", "price": 10.35}, {"id": "END-14", "name": "Root canal filling with calcium-based paste", "section": "Endodontics", "price": 13.34}, {"id": "END-15", "name": "MTA pulp capping for an exposed pulp horn", "section": "Endodontics", "price": 20.51}, {"id": "END-16", "name": "Tooth revision", "section": "Endodontics", "price": 7.17}, {"id": "END-17", "name": "Root canal revision", "section": "Endodontics", "price": 10.35}, {"id": "END-18", "name": "Apexification of immature roots", "section": "Endodontics", "price": 67.7}, {"id": "END-19", "name": "Rubber dam placement", "section": "Endodontics", "price": 4.18}, {"id": "END-20", "name": "Single-use hygiene kit", "section": "Endodontics", "price": 3.19}, {"id": "END-21", "name": "Additional local anaesthetic carpule", "section": "Endodontics", "price": 2.19}, {"id": "END-22", "name": "Filling of one root canal with MTA", "section": "Endodontics", "price": 10.35}, {"id": "END-23", "name": "ICON treatment for one tooth", "section": "Endodontics", "price": 28.87}, {"id": "END-24", "name": "Complex endodontic treatment with bioceramic material", "section": "Endodontics", "price": 153.92}, {"id": "END-25", "name": "Root canal treatment with bioceramic material (incisor)", "section": "Endodontics", "price": 88.21}, {"id": "SUR-01", "name": "Socket preservation with Colacone for delayed implant placement", "section": "Surgery", "price": 11.35}, {"id": "SUR-02", "name": "Excision of the operculum over a wisdom tooth", "section": "Surgery", "price": 14.34}, {"id": "SUR-03", "name": "Blood collection and PRF membrane preparation before surgery", "section": "Surgery", "price": 12.35}, {"id": "SUR-04", "name": "Blood collection and PRF membrane preparation before extraction (1–2 teeth)", "section": "Surgery", "price": 9.96}, {"id": "SUR-05", "name": "Blood collection and PRF membrane preparation before extraction (3–4 teeth)", "section": "Surgery", "price": 10.35}, {"id": "SUR-06", "name": "Gingival recession coverage for one tooth", "section": "Surgery", "price": 160.0}, {"id": "SUR-07", "name": "Conventional tooth extraction with socket suturing and antimicrobial sponge placement", "section": "Surgery", "price": 16.53}, {"id": "SUR-08", "name": "Frenectomy", "section": "Surgery", "price": 41.02}, {"id": "SUR-09", "name": "Incision for periostitis", "section": "Surgery", "price": 15.53}, {"id": "SUR-10", "name": "Extraction of a wisdom tooth (Grade 1 complexity), with socket suturing and antimicrobial sponge placement", "section": "Surgery", "price": 82.04}, {"id": "SUR-11", "name": "Extraction of a wisdom tooth (Grade 2 complexity)", "section": "Surgery", "price": 102.54}, {"id": "SUR-12", "name": "Complex tooth extraction with socket suturing and antimicrobial sponge placement", "section": "Surgery", "price": 20.51}, {"id": "SUR-13", "name": "Extraction of a wisdom tooth adjacent to anatomical structures", "section": "Surgery", "price": 205.09}, {"id": "SUR-14", "name": "Removal of a retention cyst", "section": "Surgery", "price": 37.04}, {"id": "SUR-15", "name": "Removal of an impacted tooth", "section": "Surgery", "price": 92.39}, {"id": "SUR-16", "name": "Histopathological examination", "section": "Surgery", "price": 20.51}, {"id": "SUR-17", "name": "Local anaesthesia", "section": "Surgery", "price": 4.18}, {"id": "SUR-18", "name": "Surgical exposure of canines", "section": "Surgery", "price": 37.04}, {"id": "SUR-19", "name": "Crown lengthening", "section": "Surgery", "price": 6.17}, {"id": "SUR-20", "name": "Collagen wedge placement", "section": "Surgery", "price": 10.35}, {"id": "SUR-21", "name": "Single-use hygiene kit", "section": "Surgery", "price": 3.19}, {"id": "SUR-22", "name": "Additional local anaesthetic cartridge", "section": "Surgery", "price": 2.19}, {"id": "SUR-23", "name": "Removal of wisdom tooth buds", "section": "Surgery", "price": 92.39}, {"id": "SUR-24", "name": "Fabrication of a protective palatal splint", "section": "Surgery", "price": 24.69}, {"id": "SUR-25", "name": "Excision of an epulis", "section": "Surgery", "price": 86.22}, {"id": "SUR-26", "name": "Retrograde filling of one root canal", "section": "Surgery", "price": 49.38}, {"id": "SUR-27", "name": "Membrane placement", "section": "Surgery", "price": 120.0}, {"id": "SUR-28", "name": "Implant removal", "section": "Surgery", "price": 60.0}, {"id": "SUR-29", "name": "Apical microsurgery of an anterior tooth with retrograde MTA filling", "section": "Surgery", "price": 310.0}, {"id": "SUR-30", "name": "Apical microsurgery of a posterior tooth with retrograde MTA filling", "section": "Surgery", "price": 340.0}, {"id": "SUR-31", "name": "Sterilisation pack", "section": "Surgery", "price": 61.73}, {"id": "SUR-32", "name": "Tooth extraction and socket preservation", "section": "Surgery", "price": 60.0}, {"id": "SRA-01", "name": "Wisdom tooth extraction, Grade 1 difficulty, with socket suturing and antimicrobial sponge placement", "section": "Surgery (Dr. R.A.)", "price": 159.29}, {"id": "SRA-02", "name": "Wisdom tooth extraction, Grade 2 difficulty, with socket suturing and antimicrobial sponge placement", "section": "Surgery (Dr. R.A.)", "price": 199.12}, {"id": "IMP-01", "name": "Surgical guide for 1–2 implants", "section": "Implantology", "price": 80.0}, {"id": "IMP-02", "name": "Surgical guide for 3–4 implants", "section": "Implantology", "price": 120.0}, {"id": "IMP-03", "name": "Surgical guide for 5–6 implants", "section": "Implantology", "price": 160.0}, {"id": "IMP-04", "name": "Sealing the screw access channel in an implant crown", "section": "Implantology", "price": 14.34}, {"id": "IMP-05", "name": "Impressions of implants for temporary crowns", "section": "Implantology", "price": 10.35}, {"id": "IMP-06", "name": "Impressions of implants for permanent crowns", "section": "Implantology", "price": 18.52}, {"id": "IMP-07", "name": "Zirconia crown on Osstem implant", "section": "Implantology", "price": 360.0}, {"id": "IMP-08", "name": "Zirconia crown on Straumann implant", "section": "Implantology", "price": 450.0}, {"id": "IMP-09", "name": "Osstem implant placement (Korea)", "section": "Implantology", "price": 460.0}, {"id": "IMP-10", "name": "Straumann BLT implant placement (Switzerland)", "section": "Implantology", "price": 830.0}, {"id": "IMP-11", "name": "Straumann SLAactive implant placement", "section": "Implantology", "price": 830.0}, {"id": "IMP-12", "name": "Healing abutment placement", "section": "Implantology", "price": 65.0}, {"id": "IMP-13", "name": "Gingival (soft-tissue) grafting around one tooth", "section": "Implantology", "price": 65.0}, {"id": "IMP-14", "name": "Bone grafting during placement of one implant", "section": "Implantology", "price": 260.0}, {"id": "IMP-15", "name": "Bone grafting during placement of multiple implants", "section": "Implantology", "price": 520.0}, {"id": "IMP-16", "name": "Pre-implant bone grafting at one implant site", "section": "Implantology", "price": 420.0}, {"id": "IMP-17", "name": "Pre-implant bone grafting at multiple implant sites", "section": "Implantology", "price": 830.0}, {"id": "IMP-18", "name": "Sinus lift before implant placement, one implant site", "section": "Implantology", "price": 530.0}, {"id": "IMP-19", "name": "Sinus lift before implant placement, two implant sites", "section": "Implantology", "price": 830.0}, {"id": "IMP-20", "name": "Sinus lift during implant placement, one implant", "section": "Implantology", "price": 330.0}, {"id": "IMP-21", "name": "Sinus lift during implant placement, 2–3 implants", "section": "Implantology", "price": 630.0}, {"id": "IMP-22", "name": "Bone grafting with lamina for 2–3 teeth", "section": "Implantology", "price": 1240.0}, {"id": "IMP-23", "name": "Bone grafting with lamina for 1–2 teeth", "section": "Implantology", "price": 830.0}, {"id": "IMP-24", "name": "Closed sinus lift", "section": "Implantology", "price": 160.0}, {"id": "IMP-25", "name": "Temporary crown on implant", "section": "Implantology", "price": 51.37}, {"id": "IMP-26", "name": "Metal-acrylic prosthesis on implants", "section": "Implantology", "price": 440.0}, {"id": "IMP-27", "name": "Acrylic denture on Locator attachments", "section": "Implantology", "price": 10.95}, {"id": "IMP-28", "name": "Gingival zenith correction for one tooth", "section": "Implantology", "price": 30.0}, {"id": "IMP-29", "name": "Temporary crown on abutment placed during surgery", "section": "Implantology", "price": 80.0}, {"id": "IMP-30", "name": "Custom healing abutment placement", "section": "Implantology", "price": 80.0}, {"id": "IMP-31", "name": "Gingival (soft-tissue) grafting around an implant", "section": "Implantology", "price": 65.0}, {"id": "IMP-32", "name": "Single-use surgical kit", "section": "Implantology", "price": 6.17}, {"id": "IMP-33", "name": "Additional local anaesthetic cartridge", "section": "Implantology", "price": 2.19}, {"id": "IMP-34", "name": "Mini-implant placement", "section": "Implantology", "price": 35.0}, {"id": "IMP-35", "name": "Multi-unit abutment placement", "section": "Implantology", "price": 60.0}, {"id": "IMP-36", "name": "Temporary prosthesis on abutments", "section": "Implantology", "price": 230.0}, {"id": "IMP-37", "name": "Zirconia prosthesis on All-on-4 implants", "section": "Implantology", "price": 2680.0}, {"id": "IMP-38", "name": "Zirconia prosthesis on All-on-6 implants", "section": "Implantology", "price": 2890.0}, {"id": "IMP-39", "name": "All-on-4 with Osstem implants", "section": "Implantology", "price": 3920.0}, {"id": "IMP-40", "name": "All-on-4 with Megagen implants", "section": "Implantology", "price": 3500.0}, {"id": "IMP-41", "name": "All-on-6 with Megagen implants", "section": "Implantology", "price": 4500.0}, {"id": "IMP-42", "name": "All-on-6 with Osstem implants", "section": "Implantology", "price": 4330.0}, {"id": "IMP-43", "name": "All-on-4 temporary prosthesis (immediate loading)", "section": "Implantology", "price": 830.0}, {"id": "IMP-44", "name": "All-on-4 temporary prosthesis (immediate loading with bar)", "section": "Implantology", "price": 980.0}, {"id": "IMP-45", "name": "All-on-6 temporary prosthesis (immediate loading)", "section": "Implantology", "price": 930.0}, {"id": "IMP-46", "name": "All-on-6 with Straumann BLX implants", "section": "Implantology", "price": 6180.0}, {"id": "IMP-47", "name": "IDR implant placement in the central incisor region with Megagen Korean implant system (guide, implant, bone grafting, gingival grafting and temporary crown)", "section": "Implantology", "price": 1240.0}, {"id": "IMP-48", "name": "Bone grafting at the time of tooth extraction", "section": "Implantology", "price": 90.0}, {"id": "IMP-49", "name": "Megagen AnyOne implant placement", "section": "Implantology", "price": 470.0}, {"id": "IMP-50", "name": "Megagen ST implant placement", "section": "Implantology", "price": 360.0}, {"id": "IMP-51", "name": "Megagen implant placement", "section": "Implantology", "price": 570.0}, {"id": "IMP-52", "name": "Megagen AnyRidge implant placement", "section": "Implantology", "price": 570.0}, {"id": "IMP-53", "name": "Zirconia implant placement", "section": "Implantology", "price": 1140.0}, {"id": "IMP-54", "name": "All-on-6 FP1 with Megagen implants", "section": "Implantology", "price": 4950.0}, {"id": "IMP-55", "name": "All-on-6 FP1 with Straumann BLX implants", "section": "Implantology", "price": 6800.0}, {"id": "IMP-56", "name": "Nobel implant placement", "section": "Implantology", "price": 830.0}, {"id": "IMP-57", "name": "Osstem SOI implant placement", "section": "Implantology", "price": 520.0}, {"id": "IMP-58", "name": "All-on-6 with Nobel implants", "section": "Implantology", "price": 7000.0}, {"id": "IMP-59", "name": "All-on-4 with Nobel implants", "section": "Implantology", "price": 5500.0}, {"id": "IMP-60", "name": "IDR implant placement in the central incisor region with Nobel Swiss implant system (guide, implant, bone grafting, gingival grafting and temporary crown)", "section": "Implantology", "price": 1750.0}, {"id": "IMP-61", "name": "Multi-unit abutment cost", "section": "Implantology", "price": 110.0}, {"id": "IMP-62", "name": "Sinus lift before placement of 3 implants", "section": "Implantology", "price": 1030.0}, {"id": "IMP-63", "name": "Sinus lift before placement of 4 implants", "section": "Implantology", "price": 1230.0}, {"id": "IMP-64", "name": "Sinus lift during placement of 4 implants", "section": "Implantology", "price": 830.0}, {"id": "IMP-65", "name": "Bone grafting with lamina during implant placement for 1–2 teeth", "section": "Implantology", "price": 400.0}, {"id": "IMP-66", "name": "Bone grafting with lamina during implant placement for 3–4 teeth", "section": "Implantology", "price": 600.0}, {"id": "PRO-01", "name": "Fabrication of a custom model", "section": "Implant prosthetics", "price": 20.51}, {"id": "PRO-02", "name": "ML zirconia crown on Osstem implant", "section": "Implant prosthetics", "price": 360.0}, {"id": "PRO-03", "name": "ML zirconia crown on Straumann implant", "section": "Implant prosthetics", "price": 450.0}, {"id": "PRO-04", "name": "ML zirconia crown on Megagen implant", "section": "Implant prosthetics", "price": 360.0}, {"id": "PRO-05", "name": "Temporary crown on implant", "section": "Implant prosthetics", "price": 50.97}, {"id": "PRO-06", "name": "Immediate temporary crown on abutment (at surgery)", "section": "Implant prosthetics", "price": 80.0}, {"id": "PRO-07", "name": "Zirconia custom abutment placement", "section": "Implant prosthetics", "price": 70.0}, {"id": "PRO-08", "name": "Titanium custom abutment", "section": "Implant prosthetics", "price": 70.0}, {"id": "PRO-09", "name": "Temporary composite crown on implant", "section": "Implant prosthetics", "price": 37.04}, {"id": "PRO-10", "name": "Osstem abutment placement", "section": "Implant prosthetics", "price": 30.76}, {"id": "PRO-11", "name": "Megagen abutment placement", "section": "Implant prosthetics", "price": 41.02}, {"id": "PRO-12", "name": "Straumann abutment placement", "section": "Implant prosthetics", "price": 61.53}, {"id": "PRO-13", "name": "ST zirconia crown on Megagen implant", "section": "Implant prosthetics", "price": 310.0}, {"id": "PRO-14", "name": "ST zirconia crown on Straumann implant", "section": "Implant prosthetics", "price": 340.0}, {"id": "PRO-15", "name": "ST zirconia crown on Osstem implant", "section": "Implant prosthetics", "price": 310.0}, {"id": "PRO-16", "name": "Neodent abutment placement", "section": "Implant prosthetics", "price": 41.02}, {"id": "PRO-17", "name": "ML zirconia crown on Nobel implant", "section": "Implant prosthetics", "price": 520.0}, {"id": "PRO-18", "name": "Implant scan for crown fabrication", "section": "Implant prosthetics", "price": 10.35}, {"id": "PRO-19", "name": "Nobel abutment placement", "section": "Implant prosthetics", "price": 110.0}, {"id": "PRO-20", "name": "Immediate temporary crown on Nobel abutment (at surgery)", "section": "Implant prosthetics", "price": 150.0}, {"id": "PRO-21", "name": "Immediate temporary crown on Straumann abutment (at surgery)", "section": "Implant prosthetics", "price": 150.0}, {"id": "SED-01", "name": "Sedation – first hour", "section": "Sedation with anaesthesiologist – adults", "price": 179.2}, {"id": "SED-02", "name": "Sedation – each additional hour", "section": "Sedation with anaesthesiologist – adults", "price": 79.65}, {"id": "SED-03", "name": "Sedation – each additional 30 minutes", "section": "Sedation with anaesthesiologist – adults", "price": 39.82}, {"id": "SED-04", "name": "Anaesthesiologist support – first hour", "section": "Sedation with anaesthesiologist – adults", "price": 99.56}, {"id": "SED-05", "name": "Anaesthesiologist support – each additional hour", "section": "Sedation with anaesthesiologist – adults", "price": 59.73}];
+const CAT = Object.fromEntries(CATALOG.map(c => [c.id, c]));
+const SED = { first: CAT["SED-01"].price, hour: CAT["SED-02"].price, half: CAT["SED-03"].price };
+const IN_CLAUDE = !!window.claude;
+
+/* ---------------- sample notes (the dentist notes provided for the challenge, read as dictation) ---------------- */
+const SAMPLES = [
+ { name: "Patient 1", text: `Patient 1.
+Stage 1: SRP, scaling and root planing, 1 segment. Pre-operative hygiene, with discount. Sinus lift during implant placement, 2-3 implants. Implants at sites 45, 35, 37. Bone grafting during implant placement around one implant, free of charge under the Doluchys programme. 1 sterilisation pack. Sedation, 4 hours / without sedation.
+Stage 2, after 3 months: healing abutments on 3 implants plus gingival grafting around 3 implants plus 3 times local anaesthesia plus 1 single-use hygiene kit. Scan of 3 implants. Temporary crowns on 4 implants plus model plus single-use hygiene kit.
+Stage 3: pre-operative hygiene, with discount. Implants at sites 15, 16. 1 sterilisation pack.
+Stage 4: healing abutments on 2 implants plus 2 times gingival grafting plus 2 times local anaesthesia plus 1 single-use hygiene kit. Scan of 2 implants. Temporary crowns on 2 implants plus 1 model plus 1 single-use hygiene kit.
+Final stage: scan of 5 implants. Zirconia crowns on 7 implants plus model plus single-use hygiene kit. Sealing of the screw-access channels in the implant crowns.` },
+ { name: "Patient 2", text: `Patient 2.
+Stage 1: pre-operative hygiene, with discount. Sinus lift during implant placement, 2-3 implants. Implants at sites 15, 35, 36, free of charge under the Doluchys programme. Sedation, 4 hours / without sedation.
+Stage 2: healing abutments on 3 implants plus gingival grafting around 3 implants. Placement of 2 implants at sites 16 and 17. 1 sterilisation pack. Scan of 3 implants. Temporary crowns on 4 implants plus model plus single-use hygiene kit.
+Stage 3: healing abutments on 2 implants plus 2 times gingival grafting plus 2 times local anaesthesia plus 1 single-use hygiene kit. Scan of 2 implants. Temporary crowns on 2 implants plus 1 model plus 1 single-use hygiene kit.
+Stage 4: scan of 5 implants. Zirconia crowns on 6 implants plus model plus single-use hygiene kit. Sealing of the screw-access channels in the implant crowns.` },
+ { name: "Patient 3", text: `Calculate a treatment estimate for a military serviceman, minus 30 percent.
+Stage 1: pre-operative hygiene, use of a sterilisation pack, bone grafting in segment 1 at the price-list price of 630 euros. Placement of four implants: sites 16, 15, 35 and 36. Sedation.
+Stage 2: calculate placement of healing abutments with a 30 percent discount at sites 16, 15, 35 and 36. After that, also calculate, for the serviceman, gingival grafting around each implant. In stage 2, also add the cost of placing temporary crowns on the implants.` },
+ { name: "Patient 4", text: `Patient 4. Plays the saxophone as a hobby, agrees not to play for six months if necessary.
+Extract the 4 front teeth and place 2 or 3 implants. Straumann implants with zirconia crowns. 2 implants, submerged with cover screws, temporaries. 890 euros per implant, 500 euros per crown. Under load the implant neck may crack if we use Korean implants. We will give a discount on the implants, confirm with Dr. R.A. Implants at sites 22 and 12. Possibly reshape the lower tooth 43. Aim for an edge-to-edge bite. Implants at 750 euros each. Lab technician: Mariana. Calculate the full estimate.` },
+ { name: "Patient 5", text: `Patient 5. Approximate estimate. Currently wears removable dentures and will not be able to wear a removable denture during healing. From Poland, Kherson region. Dr. R.A. will do the surgery. She says her crowned teeth are bad and need extraction, but the teeth are in normal condition and do not need to be extracted. No inflammation. Also wants restorative treatment. Patient accommodation needed; she will need to take it easy for a couple of days. Possibly refer for an examination in Poland.
+First visit, 3 days: no bone in segment 4, bone augmentation in segment 4 and prior bone grafting in segment 1, 1,200 to 1,400 euros per side. Segment 1: possibly lamina technique or sinus lift.
+After 4 to 6 months, 3 days: implants, 2 implants per side but 3 teeth, 470 euros and 890 euros.
+After 3 to 4 months: temporaries. Switch to zirconia after 1 month or longer.` }
+];
+
+/* ---------------- formatting ---------------- */
+const nf = new Intl.NumberFormat("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const eur = v => nf.format(v) + " €";
+const eurC = c => eur(c / 100);
+const range = (a, b, f = eurC) => a === b ? f(a) : `${f(a)} – ${f(b)}`;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+const stageColor = n => `var(--s${((n - 1) % 5) + 1})`;
+const clone = o => JSON.parse(JSON.stringify(o));
+const cap1 = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+
+/* ---------------- pricing engine (deterministic; nothing here is AI) ---------------- */
+const cents = v => Math.round(v * 100);
+function sedationUnit(h) {
+  h = Math.max(0, Number(h) || 0);
+  if (h === 0) return 0;
+  const full = Math.floor(h), half = h - full >= 0.5 ? 1 : 0;
+  if (full === 0) return SED.first;
+  return SED.first + (full - 1) * SED.hour + half * SED.half;
+}
+function priceLine(l, stage, plan) {
+  const c = l.catalog_id ? CAT[l.catalog_id] : null;
+  const qty = Math.max(0, Number(l.qty) || 1);
+  let min = null, max = null, source = "list";
+  const listPrice = c ? c.price : null;
+  if (l.sedation_hours != null && (l.catalog_id || "").startsWith("SED")) { min = max = sedationUnit(l.sedation_hours); source = "sedation"; }
+  else if (l.unit_override != null && !isNaN(+l.unit_override)) { min = max = +l.unit_override; source = "override"; }
+  else if (l.range && l.range.min != null) { min = +l.range.min; max = +(l.range.max ?? l.range.min); source = "range"; }
+  else if (c) { min = max = c.price; }
+  else { source = "unpriced"; }
+  const discounts = [];
+  if (l.programme_free) discounts.push({ label: `${l.programme_free} programme`, pct: 100 });
+  if (l.discount_pct) discounts.push({ label: "Line discount", pct: +l.discount_pct });
+  for (const m of plan.modifiers || []) {
+    const sc = m.scope;
+    const hit = sc === "all" || (typeof sc === "string" && sc === `stage:${stage.n}`) || (Array.isArray(sc) && sc.includes(l.id));
+    if (hit && m.pct) discounts.push({ label: m.label, pct: +m.pct });
+  }
+  const factor = discounts.reduce((f, d) => f * (1 - Math.min(100, d.pct) / 100), 1);
+  const grossMin = min == null ? 0 : cents(min * qty), grossMax = max == null ? 0 : cents(max * qty);
+  return { qty, unitMin: min, unitMax: max, source, listPrice, discounts, factor,
+           grossMin, grossMax, netMin: Math.round(grossMin * factor), netMax: Math.round(grossMax * factor) };
+}
+function pricePlan(plan) {
+  const out = { stages: [], grossMin: 0, grossMax: 0, netMin: 0, netMax: 0 };
+  for (const s of plan.stages || []) {
+    const st = { n: s.n, lines: [], netMin: 0, netMax: 0 };
+    for (const l of s.lines || []) {
+      const p = priceLine(l, s, plan);
+      st.lines.push(p); st.netMin += p.netMin; st.netMax += p.netMax;
+      out.grossMin += p.grossMin; out.grossMax += p.grossMax;
+    }
+    out.netMin += st.netMin; out.netMax += st.netMax; out.stages.push(st);
+  }
+  return out;
+}
+
+/* ---------------- built-in engine: reads the dictation without any AI service ---------------- */
+const fid = re => (CATALOG.find(c => re.test(c.name)) || {}).id;
+const K = {
+  preHyg: fid(/^Pre-operative professional hygiene/), preHygPartial: fid(/^Partial pre-operative/), hyg: fid(/^Professional hygiene/), hygPartial: fid(/^Partial professional hygiene/),
+  steril: fid(/^Sterilisation pack/), srpTooth: fid(/SRP\), one tooth/), srpJaw: fid(/SRP\), one jaw/),
+  sinusDur1: fid(/^Sinus lift during implant placement, one/), sinusDur23: fid(/^Sinus lift during implant placement, 2/), sinusDur4: fid(/^Sinus lift during placement of 4/),
+  sinusPre1: fid(/^Sinus lift before implant placement, one/), sinusPre2: fid(/^Sinus lift before implant placement, two/), sinusPre3: fid(/^Sinus lift before placement of 3/), closedSinus: fid(/^Closed sinus lift/),
+  boneDur1: fid(/^Bone grafting during placement of one/), boneDurN: fid(/^Bone grafting during placement of multiple/),
+  bonePre1: fid(/^Pre-implant bone grafting at one/), bonePreN: fid(/^Pre-implant bone grafting at multiple/), boneExt: fid(/^Bone grafting at the time of tooth extraction/),
+  lamina12: fid(/^Bone grafting with lamina for 1/), lamina23: fid(/^Bone grafting with lamina for 2/),
+  osstem: fid(/^Osstem implant placement/), straumann: fid(/^Straumann BLT/), anyone: fid(/^Megagen AnyOne/), megagen: fid(/^Megagen implant placement/), nobel: fid(/^Nobel implant placement/),
+  healing: fid(/^Healing abutment placement/), gingImpl: fid(/^Gingival \(soft-tissue\) grafting around an implant/),
+  la: fid(/^Local anaesthesia/), kit: fid(/^Single-use hygiene kit/), scan: fid(/^Implant scan/), tempCrown: fid(/^Temporary crown on implant/), model: fid(/^Fabrication of a custom model/),
+  zrOsstem: fid(/^Zirconia crown on Osstem/), zrStraumann: fid(/^Zirconia crown on Straumann/), zrMegagen: fid(/^ML zirconia crown on Megagen/), zrNobel: fid(/^ML zirconia crown on Nobel/),
+  seal: fid(/^Sealing the screw access/), sed: "SED-01", extraction: fid(/^Conventional tooth extraction/),
+  guide12: fid(/^Surgical guide for 1/), guide34: fid(/^Surgical guide for 3/), guide56: fid(/^Surgical guide for 5/),
+  consult: fid(/^Extended consultation/), xray: fid(/^Dental radiograph/), membrane: fid(/^Membrane placement/)
+};
+const BRANDS = [
+  { re: /straumann|swiss/i, impl: K.straumann, crown: K.zrStraumann, name: "Straumann BLT" },
+  { re: /nobel/i, impl: K.nobel, crown: K.zrNobel, name: "Nobel" },
+  { re: /any\s?one/i, impl: K.anyone, crown: K.zrMegagen, name: "Megagen AnyOne" },
+  { re: /megagen/i, impl: K.megagen, crown: K.zrMegagen, name: "Megagen" },
+  { re: /osstem|korean/i, impl: K.osstem, crown: K.zrOsstem, name: "Osstem" }
+];
+const BRAND_CHOICES = [BRANDS[4], BRANDS[2], BRANDS[0]]; // Osstem, Megagen AnyOne, Straumann BLT
+const brandIn = s => BRANDS.find(b => b.re.test(s)) || null;
+const isImplantProduct = name => /implant placement/i.test(name) && !/sinus|bone|lamina|all-on|mini|guide/i.test(name);
+const NUMW = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
+
+function normText(t) {
+  return String(t)
+    .replace(/[–—]/g, "-").replace(/×/g, "x").replace(/[“”]/g, '"')
+    .replace(/\bDr\.\s?/gi, "Dr ").replace(/\b([A-Z])\.([A-Z])\./g, "$1$2")
+    .replace(/\bminus\s+(\d+)\s*(?:percent|%)/gi, "-$1%").replace(/(\d+)\s*percent\b/gi, "$1%")
+    .replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/gi, m => NUMW[m.toLowerCase()]);
+}
+function teethIn(s) {
+  const out = [];
+  const re = /\b([1-4][1-8])\b(?!\s*(?:%|eur|euro|€|months?|hours?|h\b|days?|minutes?|weeks?))/gi;
+  let m;
+  while ((m = re.exec(s))) {
+    const before = s.slice(Math.max(0, m.index - 10), m.index).toLowerCase();
+    if (/(segment|stage|patient|quadrant|side)\s*$/.test(before)) continue;
+    out.push(+m[1]);
+  }
+  if (/front teeth|anterior teeth|incisors/i.test(s)) {
+    const n = +((s.match(/(\d+)\s+(?:front|anterior)/i) || [])[1] || 4);
+    (n >= 6 ? [13, 12, 11, 21, 22, 23] : [12, 11, 21, 22]).forEach(t => out.includes(t) || out.push(t));
+  }
+  return [...new Set(out)];
+}
+function priceMentions(s) {
+  const out = [];
+  const num = "(\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d+(?:\\.\\d+)?)";
+  const re = new RegExp(num + "\\s*(?:(?:-|to)\\s*" + num + "\\s*)?(?:eur\\b|euros?\\b|€)(?:\\s*(?:per|each|a|\\/)?\\s*(implant|crown|side|tooth|teeth|unit|jaw)?)?", "gi");
+  let m;
+  while ((m = re.exec(s))) out.push({ v: +m[1].replace(/,/g, ""), max: m[2] != null ? +m[2].replace(/,/g, "") : null, noun: m[3] ? m[3].toLowerCase().replace("teeth", "tooth") : null });
+  return out;
+}
+function qtyIn(seg) {
+  const s = seg.toLowerCase().replace(/(\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?\s*(?:(?:-|to)\s*(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?\s*)?(?:eur\b|euros?\b|€)(?:\s*(?:per|each|a|\/)?\s*(?:implant|crown|side|tooth|teeth|unit|jaw)\b)?/g, " ");
+  let m;
+  if ((m = s.match(/(\d+)\s*(?:x|times)\b/))) return { qty: +m[1] };
+  if ((m = s.match(/(\d+)\s+or\s+(\d+)\s+(?:[a-z-]+\s+)?(?:implants?|teeth|crowns?)/))) return { qty: +m[1], alt: +m[2] };
+  if ((m = s.match(/(?:on|around|for|of)\s+(\d+)\s+(?:[a-z-]+\s+)?(?:implants?|teeth|sites?|crowns?)/))) return { qty: +m[1] };
+  if ((m = s.match(/\b(\d+)\s+(?:[a-z-]+\s+){0,2}?(?:implants?|crowns?|teeth|abutments?|kits?|packs?|models?|segments?|jaws?|scans?)\b/))) return { qty: +m[1] };
+  if (/each implant|every implant|all implants|the implants|on implants|\beach\b/.test(s)) return { qty: null, ctx: true };
+  return { qty: null };
+}
+const KINDS = [
+  ["srp", /\bsrp\b|scaling and root planing/i], ["prehyg", /pre-?operative (?:professional )?hygiene/i], ["hyg", /professional hygiene|\bhygiene\b(?!\s*kit)/i],
+  ["kit", /hygiene kit|single-use kit|surgical kit/i], ["steril", /sterili[sz]ation pack/i], ["sinus", /sinus lift/i], ["lamina", /lamina/i],
+  ["bone", /bone (?:graft|augment)/i], ["healing", /healing abutment/i], ["ging", /gingival|soft[- ]tissue graft/i], ["la", /local an(?:a)?esth/i],
+  ["scan", /\bscan/i], ["temp", /temporar(?:y|ies)/i], ["model", /\bmodels?\b/i], ["crown", /crowns?\b/i], ["seal", /\bseal/i], ["sed", /sedation/i],
+  ["extract", /\bextract/i], ["guide", /surgical guide/i], ["accom", /accommodation|hotel/i], ["reshape", /reshap|grind/i],
+  ["resto", /restorative|therapeutic treatment/i], ["consult", /consultation/i], ["xray", /x-?ray|radiograph|cbct/i], ["membrane", /membrane/i]
+];
+function detectKinds(c) {
+  const lc = c.toLowerCase();
+  const found = [];
+  for (const [k, re] of KINDS) {
+    const i = lc.search(re);
+    if (i < 0) continue;
+    if (k === "hyg" && found.some(f => f.k === "prehyg")) continue;
+    if (k === "crown" && /\bseal|temporar/.test(lc)) continue;
+    if (k === "extract" && /not need|no need|don't need|do not need/.test(lc)) continue;
+    found.push({ k, i });
+  }
+  if (/implants?\b/.test(lc)) {
+    const placeRe = /(?:\bplace|placement of|placing|insert(?:ion of)?)\s+(?:\d+(?:\s*or\s*\d+)?\s+)?(?:[a-z]+\s+)?implants?/;
+    const place = placeRe.test(lc);
+    const strong = place || /implants? (?:at|in)\s+(?:sites?|\d)/.test(lc) || /^\s*(?:\d+\s+)?implants?\b/.test(lc) || brandIn(lc) || priceMentions(lc).some(p => p.noun === "implant");
+    if (strong || found.length === 0) found.push({ k: "implant", i: place ? lc.search(/\bplace|placement of|placing|insert/) : lc.search(/implants?\b/) });
+  }
+  found.sort((a, b) => a.i - b.i);
+  for (let j = 0; j < found.length; j++) {
+    let cut = found[j].i;
+    if (j > 0) {
+      const lo = found[j - 1].i, zone = lc.slice(lo, found[j].i);
+      const b = Math.max(zone.lastIndexOf(", "), zone.lastIndexOf(" and "));
+      if (b > 0) cut = lo + b;
+    }
+    found[j].cut = j === 0 ? 0 : cut;
+  }
+  found.forEach((f, j) => { f.seg = c.slice(f.cut, j + 1 < found.length ? found[j + 1].cut : c.length); });
+  return found;
+}
+
+function localParse(raw) {
+  const text = normText(raw);
+  const est = /approximate|approx\b|rough estimate|ballpark/i.test(text);
+  const plan = { patient: "Patient", patient_note: est ? "Approximate estimate" : "", modifiers: [], clinical_notes: [], stages: [], questions: [] };
+  const pm = text.match(/\bpatient\s*(\d+)/i); if (pm) plan.patient = "Patient " + pm[1];
+  const sentences = text.split(/(?<=\.)\s+|\n+/).map(s => s.trim()).filter(Boolean);
+  const hasStage = /\b(?:stage\s*\d+|final stage)\b/i.test(text);
+  const markRe = hasStage ? /^(?:in\s+)?(stage\s*(\d+)|final stage)\b/i : /^(first visit|(?:after|in)\s+\d+(?:\s*(?:-|to)\s*\d+)?\s*(?:months?|weeks?))\b/i;
+  const header = [], chunks = [];
+  for (const s of sentences) {
+    const m = s.match(markRe);
+    if (m) {
+      const num = m[2] ? +m[2] : null, last = chunks[chunks.length - 1];
+      let rest = s.slice(m[0].length);
+      if (last && num != null && last.num === num) { last.sents.push(rest.replace(/^[\s,:-]+/, "")); continue; }
+      let timing = hasStage ? "" : cap1(m[1].replace(/\s*to\s*/i, "–").replace(/\s*-\s*/, "–"));
+      const tm = rest.match(/^\s*,?\s*(after\s+\d+(?:\s*(?:-|to)\s*\d+)?\s*(?:months?|weeks?))\s*[:,]?/i);
+      if (tm) { timing = cap1(tm[1].replace(/\s*to\s*/i, "–")); rest = rest.slice(tm[0].length); }
+      const dm = rest.match(/^\s*,?\s*(\d+)\s*days?\s*[:,]?/i);
+      if (dm) { timing += (timing ? " · " : "") + dm[1] + " days"; rest = rest.slice(dm[0].length); }
+      chunks.push({ num, final: /final/i.test(m[1]), timing, sents: [rest.replace(/^[\s,:-]+/, "")] });
+    } else if (chunks.length) chunks[chunks.length - 1].sents.push(s);
+    else header.push(s);
+  }
+  if (!chunks.length) { chunks.push({ num: 1, timing: "Start", sents: header.splice(0) }); }
+  const stages = chunks.map((ch, i) => ({ n: i + 1, title: "", timing: ch.timing || (i === 0 ? "Start" : ""), final: ch.final, lines: [], facts: {} }));
+  const ctx = { implants: 0, sides: 0, brand: null, est, extracted: 0 };
+  const flags = [];
+  const clausesOf = s => s.split(/\s+plus\s+|\s*\+\s*|;\s*/i).map(x => x.trim().replace(/\.$/, "")).filter(Boolean);
+  header.forEach(s => clausesOf(s).forEach(c => parseClause(c, stages[0], ctx, plan, flags)));
+  stages.forEach((st, i) => {
+    chunks[i].sents.forEach(s => clausesOf(s).forEach(c => parseClause(c, st, ctx, plan, flags)));
+    finalizeStage(st, ctx, plan, flags);
+  });
+  plan.stages = stages.filter(s => s.lines.length).map((s, i) => { s.n = i + 1; delete s.facts; delete s.final; return s; });
+  plan.stages.forEach(s => s.lines.forEach((l, i) => { l.id = `s${s.n}.l${i + 1}`; }));
+  plan.questions = buildQuestions(plan, flags, ctx);
+  plan.stages.forEach(s => s.lines.forEach(l => { delete l._deferred; delete l._seal; }));
+  return plan;
+}
+
+function mkLine(st, id, extra) {
+  const l = { catalog_id: id || null, label: id ? CAT[id].name : (extra && extra.label) || "Service", qty: 1, teeth: [], status: "resolved", evidence: "", ...extra };
+  if (!id && l.unit_override == null && !l.range) l.status = "unpriced";
+  st.lines.push(l);
+  return l;
+}
+function parseClause(c, st, ctx, plan, flags) {
+  const lc = c.toLowerCase().trim();
+  if (lc.length < 2) return;
+  if (/if we use|may crack|might crack/.test(lc)) { plan.clinical_notes.push(cap1(c)); return; }
+  const prog = lc.match(/(?:free of charge|free)\s+under\s+(?:the\s+)?"?([a-z0-9-]+)"?\s+programme/);
+  const kinds = detectKinds(c);
+  if (!kinds.length) {
+    const pct = lc.match(/-\s?(\d+)\s*%/) || (/serviceman|military|veteran/.test(lc) && lc.match(/(\d+)\s*%/));
+    if (pct) {
+      const mil = /serviceman|military|veteran|soldier/.test(lc);
+      plan.modifiers.push({ id: "m" + (plan.modifiers.length + 1), label: mil ? "Military serviceman discount" : "Patient discount", pct: +pct[1], scope: "all" });
+      plan.patient_note = [plan.patient_note, (mil ? "Military serviceman · " : "") + `−${pct[1]}% on the whole estimate`].filter(Boolean).join(" · ");
+      return;
+    }
+    const last = st.lines[st.lines.length - 1];
+    if (prog && last) { last.programme_free = cap1(prog[1]); return; }
+    if (/with (?:a )?discount|give (?:a )?discount/.test(lc) && last) { flags.push({ t: "discAsk", l: last }); return; }
+    if (/^(?:patient\s*\d+|(?:please\s+)?calculate|approximate estimate|estimate)\b/.test(lc)) return;
+    plan.clinical_notes.push(cap1(c));
+    return;
+  }
+  const either = / or /.test(lc) && kinds.filter(k => ["lamina", "sinus", "bone"].includes(k.k)).length >= 2;
+  let eitherDone = false;
+  for (const f of kinds) {
+    const seg = f.seg, sl = seg.toLowerCase();
+    const teeth = teethIn(seg);
+    const q = qtyIn(seg);
+    const ev = (kinds.length > 1 ? seg : c).trim().replace(/^[,\s]*(?:and\s+)?/i, "");
+    const pctM = sl.match(/(\d+)\s*%\s*discount|discount of (\d+)\s*%/);
+    const linePct = pctM ? +(pctM[1] || pctM[2]) : null;
+    const discAsk = /with (?:a )?discount|give (?:a )?discount/.test(sl) && !linePct;
+    const progHere = prog && (sl.includes("programme") || f === kinds[kinds.length - 1]) ? cap1(prog[1]) : null;
+    const qty = q.qty ?? (teeth.length || null);
+    const base = { evidence: ev, teeth };
+    const add = (id, extra) => { const l = mkLine(st, id, { ...base, qty: qty || 1, ...extra }); if (linePct) l.discount_pct = linePct; if (progHere) l.programme_free = progHere; if (discAsk) flags.push({ t: "discAsk", l }); if (!qty && q.ctx) l._deferred = true; return l; };
+    if (either && ["lamina", "sinus", "bone"].includes(f.k)) {
+      if (eitherDone) continue;
+      eitherDone = true;
+      const alts = kinds.filter(k => ["lamina", "sinus", "bone"].includes(k.k)).map(k => k.k === "lamina" ? (/2-3|3 teeth/.test(lc) ? K.lamina23 : K.lamina12) : k.k === "sinus" ? K.sinusPre2 : K.bonePreN);
+      const l = add(alts[0], { qty: 1, status: "assumed" });
+      flags.push({ t: "either", l, alts, seg: c });
+      continue;
+    }
+    switch (f.k) {
+      case "srp": { const l = add(/segment|quadrant/.test(sl) || !teeth.length ? K.srpJaw : K.srpTooth, { qty: /segment|quadrant/.test(sl) ? 1 : (teeth.length || 1) }); if (/segment|quadrant/.test(sl)) { l.status = "assumed"; flags.push({ t: "srp", l }); } break; }
+      case "prehyg": { if (discAsk || /with (?:a )?discount/.test(lc)) { const l = mkLine(st, K.preHygPartial, { ...base, qty: 1, status: "assumed" }); flags.push({ t: "prehyg", l }); } else add(K.preHyg, { qty: 1 }); break; }
+      case "hyg": add(/partial/.test(sl) ? K.hygPartial : K.hyg, { qty: 1 }); break;
+      case "kit": add(K.kit); break;
+      case "steril": add(K.steril); break;
+      case "sinus": {
+        const r = sl.match(/(\d+)\s*-\s*(\d+)\s*implants?/); const hi = r ? +r[2] : (q.qty || 1);
+        const before = /before|prior/.test(sl);
+        const id = /closed/.test(sl) ? K.closedSinus : before ? (hi >= 3 ? K.sinusPre3 : hi === 2 ? K.sinusPre2 : K.sinusPre1) : (hi >= 4 ? K.sinusDur4 : hi >= 2 ? K.sinusDur23 : K.sinusDur1);
+        add(id, { qty: 1 }); break;
+      }
+      case "lamina": add(/2-3|3 teeth/.test(sl) ? K.lamina23 : K.lamina12, { qty: 1 }); break;
+      case "bone": {
+        const b = st.facts.bone || (st.facts.bone = { line: mkLine(st, K.boneDurN, { evidence: ev }), segs: new Set(), prices: [], one: false, prior: false, perSide: false, prog: null });
+        (sl.match(/segments?\s*(\d)/g) || []).forEach(x => b.segs.add(+x.match(/\d/)[0]));
+        (lc.match(/segment\s*(\d)/g) || []).forEach(x => b.segs.add(+x.match(/\d/)[0]));
+        b.prices.push(...priceMentions(seg).filter(p => !p.noun || p.noun === "side" || p.noun === "tooth"));
+        if (/around 1 implant|1 implant|one implant/.test(sl)) b.one = true;
+        if (/prior|before|first|augmentation/.test(sl) && !/during/.test(sl)) b.prior = true;
+        if (/per side/.test(sl)) b.perSide = true;
+        if (/extraction/.test(sl)) b.ext = true;
+        if (progHere) b.prog = progHere;
+        if (linePct) b.line.discount_pct = linePct;
+        break;
+      }
+      case "healing": add(K.healing); break;
+      case "ging": add(K.gingImpl); break;
+      case "la": add(K.la); break;
+      case "scan": add(K.scan); break;
+      case "temp": { const l = add(K.tempCrown); if (!qty) l._deferred = true; break; }
+      case "model": add(K.model); break;
+      case "seal": { const l = add(K.seal, { qty: q.qty || 1 }); if (!q.qty) l._seal = true; break; }
+      case "crown": {
+        const cf = st.facts.crown || (st.facts.crown = { line: mkLine(st, K.zrOsstem, { evidence: ev }), qty: null, prices: [] });
+        if (q.qty) cf.qty = q.qty;
+        cf.prices.push(...priceMentions(seg).filter(p => p.noun === "crown" || (!p.noun && !/implant/.test(sl))));
+        if (teeth.length) cf.line.teeth = teeth;
+        break;
+      }
+      case "sed": {
+        const h = sl.match(/(\d+(?:\.\d+)?)\s*(?:h\b|hours?)/);
+        const l = add(K.sed, { qty: 1, sedation_hours: h ? +h[1] : 1, teeth: [] });
+        if (/without|\/|\bor\b/.test(sl)) { l.status = "assumed"; flags.push({ t: "sedEither", l }); }
+        else if (!h) { l.status = "assumed"; flags.push({ t: "sedMissing", l }); }
+        break;
+      }
+      case "extract": { const l = add(K.extraction, { qty: q.qty || teeth.length || 1 }); ctx.extracted += l.qty; break; }
+      case "guide": { const l = add(K.guide12, { qty: 1, teeth: [] }); l._guide = q.qty || true; break; }
+      case "accom": add(null, { label: "Patient accommodation", qty: 1 }); break;
+      case "reshape": add(null, { label: `Reshaping (grinding) of tooth ${teeth.join(", ")}`.replace(/ of tooth $/, ""), qty: 1 }); break;
+      case "resto": add(null, { label: "Restorative treatment (to be planned after examination)", qty: 1, teeth: [] }); break;
+      case "consult": add(K.consult, { qty: 1 }); break;
+      case "xray": add(K.xray); break;
+      case "membrane": add(K.membrane); break;
+      case "implant": {
+        const im = st.facts.implant || (st.facts.implant = { line: mkLine(st, K.osstem, { evidence: ev }), teeth: new Set(), qty: null, alt: null, brand: null, prices: [], prog: null, discAsk: false, perSide: false, evs: [] });
+        teeth.forEach(t => im.teeth.add(t));
+        if (q.qty && !/per side/.test(sl)) im.qty = Math.max(im.qty || 0, q.qty);
+        if (q.qty && /per side/.test(sl)) { im.qty = q.qty; im.perSide = true; }
+        if (q.alt) im.alt = q.alt;
+        const br = brandIn(sl); if (br && !/if we use/.test(sl)) im.brand = br;
+        im.prices.push(...priceMentions(seg).filter(p => p.noun === "implant" || !p.noun));
+        if (progHere) im.prog = progHere;
+        if (/discount/.test(sl) && !linePct) im.discAsk = true;
+        if (linePct) im.line.discount_pct = linePct;
+        im.evs.push(seg.trim());
+        break;
+      }
+    }
+  }
+}
+function finalizeStage(st, ctx, plan, flags) {
+  const f = st.facts;
+  if (f.implant) {
+    const im = f.implant, l = im.line;
+    const brand = im.brand || ctx.brand;
+    l.catalog_id = brand ? brand.impl : K.osstem; l.label = CAT[l.catalog_id].name;
+    l.teeth = [...im.teeth];
+    let qty = Math.max(im.qty || 0, l.teeth.length) || 1;
+    if (im.perSide) qty = im.qty * Math.max(ctx.sides || 2, 1);
+    l.qty = qty;
+    l.evidence = im.evs.slice(0, 2).join(" … ");
+    const vals = [...new Set(im.prices.map(p => p.v))];
+    if (vals.length && ctx.est && vals.length > 1) { l.range = { min: Math.min(...vals), max: Math.max(...vals) }; l.status = "assumed"; flags.push({ t: "estRange", l, vals }); }
+    else if (vals.length) { l.unit_override = im.prices[im.prices.length - 1].v; if (vals.length > 1) { l.status = "assumed"; flags.push({ t: "priceConflict", l, vals, brand }); } }
+    if (im.prog) { l.programme_free = im.prog; flags.push({ t: "progBig", l }); }
+    if (im.discAsk) flags.push({ t: "implDisc", l });
+    if (im.alt) { l.status = "assumed"; flags.push({ t: "qtyAlt", l, a: im.qty || qty, b: im.alt }); }
+    if (!brand && !vals.length) { l.status = "assumed"; flags.push({ t: "brand", l }); }
+    if (brand) ctx.brand = brand;
+    ctx.implants += qty;
+  }
+  if (f.bone) {
+    const b = f.bone, l = b.line;
+    const implTeeth = f.implant ? [...f.implant.teeth] : [];
+    const inSeg = b.segs.size ? implTeeth.filter(t => b.segs.has(Math.floor(t / 10))).length : implTeeth.length;
+    const during = !!f.implant && !b.prior;
+    l.catalog_id = b.ext ? K.boneExt : during ? (b.one || inSeg === 1 ? K.boneDur1 : K.boneDurN) : ((b.segs.size > 1 || b.perSide) ? K.bonePreN : K.bonePre1);
+    l.label = CAT[l.catalog_id].name + (b.segs.size ? ` (segment ${[...b.segs].join(" & ")})` : "");
+    l.teeth = b.segs.size && implTeeth.length ? implTeeth.filter(t => b.segs.has(Math.floor(t / 10))) : [];
+    l.qty = b.perSide ? Math.max(1, b.segs.size) : 1;
+    const p = b.prices[b.prices.length - 1];
+    if (p && p.max != null) { l.range = { min: p.v, max: p.max }; }
+    else if (p) l.unit_override = p.v;
+    if (b.prog) l.programme_free = b.prog;
+    ctx.sides = Math.max(ctx.sides, b.segs.size);
+  }
+  if (f.crown) {
+    const cf = f.crown, l = cf.line;
+    l.catalog_id = ctx.brand ? ctx.brand.crown : K.zrOsstem; l.label = CAT[l.catalog_id].name;
+    l.qty = cf.qty || ctx.implants || 1;
+    const p = cf.prices[cf.prices.length - 1]; if (p) l.unit_override = p.v;
+    if (!cf.qty && ctx.extracted > ctx.implants && ctx.implants) { l.status = "assumed"; flags.push({ t: "crownCount", l, a: ctx.implants, b: ctx.extracted }); }
+  }
+  for (const l of st.lines) {
+    if (l._deferred) l.qty = ctx.implants || 1;
+    if (l._seal) { const cr = st.lines.find(x => /zirconia crown/i.test(CAT[x.catalog_id]?.name || "")); l.qty = cr ? cr.qty : 1; }
+    if (l._guide) { l.qty = 1; const n = typeof l._guide === "number" ? l._guide : ctx.implants; l.catalog_id = n >= 5 ? K.guide56 : n >= 3 ? K.guide34 : K.guide12; l.label = CAT[l.catalog_id].name; delete l._guide; }
+    if (l.catalog_id === K.tempCrown && ctx.implants && l.qty > ctx.implants) flags.push({ t: "tempCount", l, a: l.qty, b: ctx.implants });
+  }
+  const has = re => st.lines.some(l => re.test(CAT[l.catalog_id]?.name || l.label));
+  const hasImpl = st.lines.some(l => isImplantProduct(CAT[l.catalog_id]?.name || ""));
+  st.title = hasImpl && has(/zirconia crown/i) ? "Implants & crowns" : st.final || has(/zirconia crown/i) ? "Final zirconia crowns" : hasImpl ? "Implant surgery" : has(/healing abutment/i) ? "Healing abutments & temporaries" : has(/bone|lamina|sinus/i) ? "Bone augmentation" : has(/temporary crown/i) ? "Temporary crowns" : "Treatment";
+}
+function buildQuestions(plan, flags, ctx) {
+  const Q = [];
+  const all = plan.stages.flatMap(s => s.lines);
+  const set = (l, fields) => ({ op: "set", line: l.id, fields });
+  const push = o => { o.id = "q" + (Q.length + 1); Q.push(o); };
+  const live = l => all.includes(l) && l.id;
+  const brandLines = flags.filter(f => f.t === "brand" && live(f.l)).map(f => f.l);
+  if (brandLines.length) {
+    const crowns = all.filter(l => /zirconia crown/i.test(CAT[l.catalog_id]?.name || ""));
+    const n = brandLines.reduce((a, l) => a + l.qty, 0), nc = crowns.reduce((a, l) => a + l.qty, 0);
+    const teeth = brandLines.flatMap(l => l.teeth);
+    push({ type: "Under-specified product", short: "Implant system", question: `Which implant system for ${teeth.length ? "sites " + teeth.join(", ") : n + " implants"}?`, why: "No system was dictated. The price list has several, and the crowns follow the same system.", line_ids: [...brandLines, ...crowns].map(l => l.id),
+      eur_at_stake: n * (CAT[K.straumann].price - CAT[K.osstem].price) + nc * (CAT[K.zrStraumann].price - CAT[K.zrOsstem].price),
+      options: BRAND_CHOICES.map(b => ({ label: `${b.name}, ${eur(CAT[b.impl].price)} each`, ops: [...brandLines.map(l => set(l, { catalog_id: b.impl, label: CAT[b.impl].name })), ...crowns.map(l => set(l, { catalog_id: b.crown, label: CAT[b.crown].name }))] })), default_index: 0 });
+  }
+  for (const f of flags) {
+    const l = f.l; if (!live(l)) continue;
+    const gross = priceLine(l, { n: 0 }, { modifiers: [] }).grossMax / 100;
+    switch (f.t) {
+      case "priceConflict": {
+        const listP = CAT[l.catalog_id]?.price;
+        const opts = f.vals.map(v => ({ label: `${eur(v)} per implant (dictated)`, ops: [set(l, { unit_override: v })] }));
+        if (listP && !f.vals.includes(listP)) opts.push({ label: `List price, ${eur(listP)}`, ops: [set(l, { unit_override: null })] });
+        push({ type: "Price conflict", short: "Implant price", question: `Two different implant prices were dictated (${f.vals.map(eur).join(" and ")}). Which one applies?`, why: listP ? `The list price for ${CAT[l.catalog_id].name} is ${eur(listP)}.` : "", line_ids: [l.id], eur_at_stake: (Math.max(...f.vals) - Math.min(...f.vals)) * l.qty, options: opts, default_index: f.vals.indexOf(l.unit_override) });
+        break;
+      }
+      case "estRange": push({ type: "Price conflict", short: "Implant price", question: `Implants were quoted at ${f.vals.map(eur).join(" and ")}. Which price should the estimate use?`, why: "This is an approximate estimate, so the plan shows the full range until you choose.", line_ids: [l.id], eur_at_stake: (Math.max(...f.vals) - Math.min(...f.vals)) * l.qty,
+        options: [{ label: "Keep the range", ops: [] }, ...f.vals.map(v => ({ label: `${eur(v)} per implant`, ops: [set(l, { range: null, unit_override: v, catalog_id: v === CAT[K.anyone].price ? K.anyone : l.catalog_id, label: v === CAT[K.anyone].price ? CAT[K.anyone].name : l.label })] }))], default_index: 0 }); break;
+      case "qtyAlt": push({ type: "Quantity", short: "Number of implants", question: `${f.a} or ${f.b} implants?`, why: "Both numbers were dictated.", line_ids: [l.id], eur_at_stake: Math.abs(f.b - f.a) * (l.unit_override ?? CAT[l.catalog_id]?.price ?? 0), options: [f.a, f.b].map(n => ({ label: `${n} implants`, ops: [set(l, { qty: n })] })), default_index: 0 }); break;
+      case "implDisc": push({ type: "Discount scope", short: "Implant discount", question: "A discount on the implants was mentioned, but no amount. How much?", why: "The note says to confirm it with the surgeon.", line_ids: [l.id], eur_at_stake: gross * 0.2,
+        options: [0, 10, 15, 20].map(p => ({ label: p ? `−${p}%` : "No discount yet", ops: [set(l, { discount_pct: p || null })] })), default_index: 0 }); break;
+      case "progBig": if (gross > 400) push({ type: "Programme eligibility", short: "Free programme", question: `${l.label} is marked free of charge under the ${l.programme_free} programme. Is that right?`, why: `That is ${eur(gross)} of treatment at no cost. In other plans the programme covers only a bone graft.`, line_ids: [l.id], eur_at_stake: gross,
+        options: [{ label: `Yes, free under ${l.programme_free}`, ops: [] }, { label: "No, charge the list price", ops: [set(l, { programme_free: null })] }], default_index: 0 }); break;
+      case "crownCount": push({ type: "Count mismatch", short: "Number of crowns", question: `${f.b} teeth are extracted but ${f.a} implants are placed. How many crowns?`, why: "Two implants can carry a bridge that replaces more teeth.", line_ids: [l.id], eur_at_stake: (f.b - f.a) * (l.unit_override ?? CAT[l.catalog_id].price),
+        options: [{ label: `${f.a} crowns, one per implant`, ops: [set(l, { qty: f.a })] }, { label: `${f.b}-unit bridge on ${f.a} implants`, ops: [set(l, { qty: f.b })] }], default_index: 0 }); break;
+      case "sedEither": push({ type: "Either / or", short: "Sedation", question: `Sedation was dictated as “${l.sedation_hours} h / without sedation”. Which one?`, why: "Sedation is billed per hour: 179.20 € for the first hour, then 79.65 € per hour.", line_ids: [l.id], eur_at_stake: sedationUnit(l.sedation_hours),
+        options: [{ label: `Sedation ${l.sedation_hours} h, ${eur(sedationUnit(l.sedation_hours))}`, ops: [] }, { label: "Without sedation", ops: [{ op: "remove", line: l.id }] }], default_index: 0 }); break;
+      case "sedMissing": push({ type: "Either / or", short: "Sedation", question: "How long is the sedation?", why: "Only “sedation” was dictated. It is billed per hour.", line_ids: [l.id], eur_at_stake: sedationUnit(4) - sedationUnit(1),
+        options: [...[1, 2, 4].map(h => ({ label: `${h} hour${h > 1 ? "s" : ""}, ${eur(sedationUnit(h))}`, ops: [set(l, { sedation_hours: h })] })), { label: "No sedation", ops: [{ op: "remove", line: l.id }] }], default_index: 0 }); break;
+      case "srp": push({ type: "Unit mismatch", short: "SRP unit", question: "“SRP, 1 segment”: the price list charges SRP per jaw or per tooth. How should it be billed?", why: "A segment (quadrant) is about half a jaw.", line_ids: [l.id], eur_at_stake: CAT[K.srpJaw].price - 6 * CAT[K.srpTooth].price,
+        options: [{ label: `One jaw, ${eur(CAT[K.srpJaw].price)}`, ops: [] }, { label: `8 teeth × ${eur(CAT[K.srpTooth].price)}`, ops: [set(l, { catalog_id: K.srpTooth, label: CAT[K.srpTooth].name, qty: 8 })] }, { label: `6 teeth × ${eur(CAT[K.srpTooth].price)}`, ops: [set(l, { catalog_id: K.srpTooth, label: CAT[K.srpTooth].name, qty: 6 })] }], default_index: 0 }); break;
+      case "either": push({ type: "Either / or", short: "Technique", question: `“${f.seg.trim()}”: which technique?`, why: "Two techniques were dictated with “or”.", line_ids: [l.id], eur_at_stake: Math.max(...f.alts.map(a => CAT[a].price)) - Math.min(...f.alts.map(a => CAT[a].price)),
+        options: [...f.alts.map(a => ({ label: `${CAT[a].name}, ${eur(CAT[a].price)}`, ops: [set(l, { catalog_id: a, label: CAT[a].name })] })), { label: "Covered by the bone grafting above", ops: [{ op: "remove", line: l.id }] }], default_index: 0 }); break;
+      case "tempCount": push({ type: "Count mismatch", short: "Temporary crowns", question: `${f.a} temporary crowns, but only ${f.b} implants have been placed by this stage.`, why: "One temporary crown per implant is usual.", line_ids: [l.id], eur_at_stake: (f.a - f.b) * CAT[K.tempCrown].price,
+        options: [{ label: `Keep ${f.a}`, ops: [] }, { label: `Reduce to ${f.b}`, ops: [set(l, { qty: f.b })] }], default_index: 0 }); break;
+    }
+  }
+  const pre = flags.filter(f => f.t === "prehyg" && live(f.l)).map(f => f.l);
+  if (pre.length) push({ type: "Discount scope", short: "Hygiene discount", question: "“Pre-operative hygiene, with discount”: which discount?", why: "No amount was dictated. The price list has a partial pre-operative hygiene at 7.17 €.", line_ids: pre.map(l => l.id), eur_at_stake: pre.length * (CAT[K.preHyg].price - CAT[K.preHygPartial].price),
+    options: [{ label: `Partial pre-operative hygiene, ${eur(CAT[K.preHygPartial].price)}`, ops: [] }, { label: `Full price, ${eur(CAT[K.preHyg].price)}`, ops: pre.map(l => set(l, { catalog_id: K.preHyg, label: CAT[K.preHyg].name })) }, { label: "Full price −50%", ops: pre.map(l => set(l, { catalog_id: K.preHyg, label: CAT[K.preHyg].name, discount_pct: 50 })) }], default_index: 0 });
+  if (plan.modifiers.some(m => m.scope === "all")) for (const l of all.filter(x => x.discount_pct)) {
+    const m = plan.modifiers.find(x => x.scope === "all"); const g = priceLine(l, { n: 0 }, { modifiers: [] }).grossMax / 100;
+    const stacked = 100 - Math.round((1 - l.discount_pct / 100) * (1 - m.pct / 100) * 100);
+    push({ type: "Discount scope", short: "Discount stacking", question: `${l.label}: is the ${l.discount_pct}% the same ${m.label.toLowerCase()}, or extra on top of it?`, why: `Applied on top, this line ends up ${stacked}% off.`, line_ids: [l.id], eur_at_stake: Math.round(g * (1 - m.pct / 100) * (l.discount_pct / 100) * 100) / 100,
+      options: [{ label: `Same discount (−${m.pct}% total)`, ops: [set(l, { discount_pct: null })] }, { label: `Extra discount (−${stacked}% total)`, ops: [] }], default_index: 1 });
+  }
+  for (const l of all) {
+    const c = CAT[l.catalog_id];
+    if (!c || l.unit_override == null || Math.abs(l.unit_override - c.price) < 0.5) continue;
+    const twin = CATALOG.find(x => x.id !== c.id && Math.abs(x.price - l.unit_override) < 0.01 && /Implantology|Surgery/.test(x.section) && !isImplantProduct(x.name));
+    if (!twin || isImplantProduct(c.name) || /zirconia crown/i.test(c.name)) continue;
+    push({ type: "Price conflict", short: "Service at " + eur(l.unit_override), question: `${eur(l.unit_override)} for “${l.label}” is the list price of “${twin.name}”, not of this service (${eur(c.price)}). Which service is it?`, why: "A price that matches another service often means the service was named loosely.", line_ids: [l.id], eur_at_stake: Math.abs(l.unit_override - c.price) * l.qty,
+      options: [{ label: `${twin.name}, ${eur(twin.price)}`, ops: [set(l, { catalog_id: twin.id, label: twin.name, unit_override: null })] }, { label: `${c.name}, keep ${eur(l.unit_override)}`, ops: [] }, { label: `${c.name} at list price, ${eur(c.price)}`, ops: [set(l, { unit_override: null })] }], default_index: 1 });
+  }
+  for (const q of Q) for (const id of q.line_ids) { const l = all.find(x => x.id === id); if (l && l.status === "resolved") l.status = "assumed"; }
+  return Q;
+}
+
+/* ---------------- validator (deterministic rule checks) ---------------- */
+const VALID_FDI = new Set([1, 2, 3, 4].flatMap(q => [1, 2, 3, 4, 5, 6, 7, 8].map(t => q * 10 + t)));
+function validate(plan, resolvedKeys) {
+  const issues = [];
+  const add = (key, o) => { if (!resolvedKeys.has(key)) issues.push({ ...o, key, source: "rule", id: "r-" + key.replace(/[^a-z0-9]/gi, "") }); };
+  const set = (l, fields) => ({ op: "set", line: l.id, fields });
+  const all = (plan.stages || []).flatMap(s => (s.lines || []).map(l => ({ l, s })));
+  for (const { l } of all) {
+    const bad = (l.teeth || []).filter(t => !VALID_FDI.has(+t));
+    if (bad.length) add(`fdi:${l.id}`, { type: "Invalid tooth number", short: "Tooth number", question: `“${l.label}”: tooth ${bad.join(", ")} does not exist in FDI notation.`, why: "Valid teeth are 11–18, 21–28, 31–38 and 41–48. This is often a speech-recognition slip.", line_ids: [l.id], eur_at_stake: 0, options: [{ label: "Keep as dictated", ops: [] }, { label: "Remove these tooth numbers", ops: [set(l, { teeth: l.teeth.filter(t => VALID_FDI.has(+t)) })] }], default_index: 0 });
+  }
+  const isImplant = l => isImplantProduct(CAT[l.catalog_id]?.name || "");
+  for (const s of plan.stages || []) {
+    const sinus = (s.lines || []).find(l => /sinus lift/i.test(CAT[l.catalog_id]?.name || ""));
+    if (!sinus) continue;
+    const teeth = s.lines.filter(isImplant).flatMap(l => l.teeth || []);
+    if (teeth.length && teeth.every(t => Math.floor(t / 10) >= 3)) {
+      const upper = plan.stages.find(x => x !== s && x.lines.some(l => isImplant(l) && (l.teeth || []).some(t => Math.floor(t / 10) <= 2)));
+      const opts = [{ label: "Keep as dictated", ops: [] }, { label: "Remove the sinus lift", ops: [{ op: "remove", line: sinus.id }] }];
+      if (upper) opts.push({ label: `Move it to stage ${upper.n} (upper-jaw implants)`, ops: [{ op: "move", line: sinus.id, toStage: upper.n }] });
+      add(`sinus:${sinus.id}`, { type: "Clinical inconsistency", short: "Sinus lift", question: `Stage ${s.n} has a sinus lift, but every implant in it (${teeth.join(", ")}) is in the lower jaw.`, why: "A sinus lift is only possible in the upper jaw (quadrants 1–2).", line_ids: [sinus.id], eur_at_stake: CAT[sinus.catalog_id].price, options: opts, default_index: 0 });
+    }
+  }
+  const implants = all.filter(x => isImplant(x.l)).reduce((a, x) => a + (+x.l.qty || 0), 0);
+  const crownLines = all.filter(x => /zirconia crown/i.test(CAT[x.l.catalog_id]?.name || ""));
+  const crowns = crownLines.reduce((a, x) => a + (+x.l.qty || 0), 0);
+  if (implants > 0 && crowns > implants && crownLines.length === 1) {
+    const cl = crownLines[0].l, unit = cl.unit_override ?? CAT[cl.catalog_id]?.price ?? 0;
+    add(`count:${cl.id}`, { type: "Count mismatch", short: "Number of crowns", question: `${crowns} zirconia crowns are planned, but only ${implants} implants are placed.`, why: "This could be a bridge or cantilever, or a dictation slip.", line_ids: [cl.id], eur_at_stake: (crowns - implants) * unit, options: [{ label: `Keep ${crowns} crowns (bridge or cantilever)`, ops: [] }, { label: `Reduce to ${implants} crowns, one per implant`, ops: [set(cl, { qty: implants })] }], default_index: 0 });
+  }
+  for (const { l } of all) {
+    const c = CAT[l.catalog_id];
+    if (c && l.unit_override != null && Math.abs(+l.unit_override - c.price) > 0.5)
+      add(`override:${l.id}`, { type: "Price conflict", short: "Dictated price", question: `“${l.label}” is priced at ${eur(+l.unit_override)}, but the list price is ${eur(c.price)}.`, why: "The dictated price overrides the list. Please confirm.", line_ids: [l.id], eur_at_stake: Math.abs(+l.unit_override - c.price) * (+l.qty || 1), options: [{ label: `Keep dictated price, ${eur(+l.unit_override)}`, ops: [] }, { label: `Use list price, ${eur(c.price)}`, ops: [set(l, { unit_override: null })] }], default_index: 0 });
+    if (!c && l.unit_override == null && !l.range)
+      add(`unpriced:${l.id}`, { type: "Off-catalog item", short: l.label, question: `“${l.label}” is not on the price list. How should it appear?`, why: "Off-list services are never dropped silently. Use “Other…” to type a price.", line_ids: [l.id], eur_at_stake: 0, options: [{ label: "Keep as “price on request”", ops: [] }, { label: "Remove from the plan", ops: [{ op: "remove", line: l.id }] }], default_index: 0 });
+  }
+  return issues;
+}
+function mergeIssues(plan, ruleIssues) {
+  const own = (plan.questions || []).map((q, i) => ({ ...q, id: q.id || "q" + (i + 1), source: q.source || "agent" }));
+  const overlaps = (a, b) => (a.line_ids || []).some(x => (b.line_ids || []).includes(x));
+  const extra = ruleIssues.filter(r => !own.some(q => overlaps(q, r) && (q.type === r.type || r.type === "Price conflict")));
+  return [...own, ...extra].sort((a, b) => (+b.eur_at_stake || 0) - (+a.eur_at_stake || 0)).slice(0, 8);
+}
+
+/* ---------------- applying answers (regeneration without AI) ---------------- */
+function findLine(plan, id) {
+  for (const s of plan.stages) { const i = s.lines.findIndex(l => l.id === id); if (i >= 0) return { s, i, l: s.lines[i] }; }
+  return null;
+}
+function applyOps(plan, ops) {
+  for (const o of ops || []) {
+    const loc = findLine(plan, o.line);
+    if (!loc) continue;
+    if (o.op === "set") { for (const [k, v] of Object.entries(o.fields)) { if (v === null) delete loc.l[k]; else loc.l[k] = v; } }
+    if (o.op === "remove") loc.s.lines.splice(loc.i, 1);
+    if (o.op === "move") { const t = plan.stages.find(s => s.n === o.toStage); if (t) { loc.s.lines.splice(loc.i, 1); t.lines.unshift(loc.l); } }
+  }
+}
+function applyOther(plan, q, txt) {
+  const p = priceMentions(normText(txt))[0] || (/^\s*\d+(?:[.,]\d+)?\s*€?\s*$/.test(txt) && /€|eur/i.test(txt) ? { v: +txt.replace(/[^\d.]/g, "") } : null);
+  const n = normText(txt).match(/(\d+(?:\.\d+)?)/);
+  for (const id of q.line_ids || []) {
+    const loc = findLine(plan, id); if (!loc) continue;
+    if (p) { loc.l.unit_override = p.v; delete loc.l.range; }
+    else if (loc.l.sedation_hours != null && n) loc.l.sedation_hours = +n[1];
+    else if (n) loc.l.qty = +n[1];
+  }
+  if (!p && !n) plan.clinical_notes.push("Dentist: " + txt);
+}
+function addExtra(plan, extra) {
+  const parsed = localParse(extra);
+  const m = normText(extra).match(/stage\s*(\d+)/i);
+  const target = plan.stages.find(s => m && s.n === +m[1]) || plan.stages[plan.stages.length - 1];
+  const added = [];
+  if (!target) return added;
+  parsed.stages.flatMap(s => s.lines).forEach((l, i) => { l.id = `s${target.n}.x${Date.now() % 10000}${i}`; l.status = l.status === "unpriced" ? "unpriced" : "resolved"; target.lines.push(l); added.push(`Added to stage ${target.n}: ${l.label} × ${l.qty}`); });
+  parsed.clinical_notes.forEach(n => plan.clinical_notes.push(n));
+  return added;
+}
+
+/* ---------------- state ---------------- */
+const state = { versions: [], cur: -1, answers: {}, others: {}, resolvedKeys: new Set(), busy: false, example: true, sampleIdx: 2, engine: "local", claudeOK: false };
+const $ = id => document.getElementById(id);
+
+function normalize(plan) {
+  plan = plan && typeof plan === "object" ? plan : {};
+  plan.stages = Array.isArray(plan.stages) ? plan.stages : [];
+  plan.modifiers = Array.isArray(plan.modifiers) ? plan.modifiers : [];
+  plan.clinical_notes = Array.isArray(plan.clinical_notes) ? plan.clinical_notes : [];
+  plan.questions = Array.isArray(plan.questions) ? plan.questions : [];
+  plan.stages.forEach((s, si) => {
+    s.n = +s.n || si + 1; s.lines = Array.isArray(s.lines) ? s.lines : [];
+    s.lines.forEach((l, li) => {
+      l.id = l.id || `s${s.n}.l${li + 1}`;
+      if (l.catalog_id && !CAT[l.catalog_id]) { l.label = l.label || l.catalog_id; l.catalog_id = null; }
+      l.teeth = (Array.isArray(l.teeth) ? l.teeth : []).map(Number).filter(Boolean);
+      l.qty = +l.qty || (l.teeth.length || 1);
+      l.label = l.label || CAT[l.catalog_id]?.name || "Service";
+      if (!l.catalog_id && l.unit_override == null && !l.range) l.status = "unpriced";
+    });
+  });
+  plan.questions.forEach(q => { q.options = Array.isArray(q.options) ? q.options.map(o => typeof o === "string" ? { label: o } : o) : []; q.default_index = Math.min(Math.max(0, +q.default_index || 0), Math.max(0, q.options.length - 1)); q.line_ids = Array.isArray(q.line_ids) ? q.line_ids : []; });
+  return plan;
+}
+function addVersion(plan, changeLog, engine) {
+  plan = normalize(plan);
+  const issues = mergeIssues(plan, validate(plan, state.resolvedKeys));
+  const priced = pricePlan(plan);
+  state.versions.push({ n: state.versions.length + 1, plan, issues, priced, changeLog: changeLog || [], at: new Date(), engine });
+  state.cur = state.versions.length - 1;
+  state.answers = {}; state.others = {};
+  issues.forEach(q => state.answers[q.id] = q.default_index ?? 0);
+  render();
+}
+
+/* ---------------- rendering ---------------- */
+function renderSamples() {
+  $("samples").innerHTML = SAMPLES.map((s, i) => `<button class="chip" data-i="${i}" aria-pressed="${i === state.sampleIdx}">${s.name}</button>`).join("");
+}
+function renderEngine() {
+  $("engineRow").hidden = !state.claudeOK;
+  $("engineRow").querySelectorAll("[data-engine]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.engine === state.engine)));
+}
+function render() {
+  const v = state.versions[state.cur];
+  $("exampleBanner").hidden = !(state.example && v && state.versions.length === 1);
+  $("versions").innerHTML = state.versions.map((x, i) => `<button class="vtab" data-v="${i}" aria-pressed="${i === state.cur}">v${x.n}</button>`).join("");
+  $("pdfBtn").disabled = !v;
+  if (!v) { $("summary").innerHTML = ""; $("doc").innerHTML = `<div class="empty">No plan yet. Pick a sample note or dictate one, then press Build treatment plan.</div>`; $("qPanel").hidden = true; renderOdo(null); return; }
+  const { plan, priced, issues } = v;
+  $("patientName").textContent = plan.patient || "Patient";
+  $("patientNote").textContent = plan.patient_note || "";
+  const savings = priced.grossMin - priced.netMin;
+  const lines = plan.stages.reduce((a, s) => a + s.lines.length, 0);
+  const assumed = plan.stages.flatMap(s => s.lines).filter(l => l.status === "assumed").length;
+  $("summary").innerHTML = `
+    <div class="kpi"><div class="k">Patient pays</div><div class="v">${range(priced.netMin, priced.netMax)}</div></div>
+    <div class="kpi"><div class="k">Discounts</div><div class="v">${savings > 0 ? "−" + eurC(savings) : "–"}</div></div>
+    <div class="kpi"><div class="k">Stages · lines</div><div class="v">${plan.stages.length} · ${lines}</div></div>
+    <div class="kpi"><div class="k">Open questions</div><div class="v ${issues.length ? "amber" : ""}">${issues.length}${assumed ? ` <span style="font-size:12px">(${assumed} assumed)</span>` : ""}</div></div>`;
+  renderOdo(plan);
+  renderQuestions(v);
+  renderDoc(v);
+}
+function renderOdo(plan) {
+  const map = {};
+  if (plan) for (const s of plan.stages) for (const l of s.lines) for (const t of l.teeth || []) { (map[t] = map[t] || { n: s.n, items: [] }).items.push(`S${s.n}: ${l.label}`); }
+  const upper = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28], lower = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
+  const cell = (t, low) => { const m = map[t]; const mid = t % 10 === 1 && (Math.floor(t / 10) === 1 || Math.floor(t / 10) === 4); return `<div class="t ${low ? "lower" : ""} ${mid ? "mid" : ""} ${m ? "on" : ""}" ${m ? `style="background:${stageColor(m.n)}" title="${esc(t + " — " + m.items.join("; "))}"` : `title="${t}"`}>${t}</div>`; };
+  $("odo").innerHTML = upper.map(t => cell(t)).join("") + `<div class="gap"></div>` + lower.map(t => cell(t, true)).join("");
+  $("legend").innerHTML = plan ? `<span>Teeth in the plan (FDI), coloured by first stage:</span>` + plan.stages.map(s => `<span><i style="background:${stageColor(s.n)}"></i>Stage ${s.n}</span>`).join("") : "";
+}
+function renderQuestions(v) {
+  const isLatest = state.cur === state.versions.length - 1;
+  $("qPanel").hidden = !isLatest;
+  $("qCount").textContent = v.issues.length ? `${v.issues.length} open · ranked by € at stake` : "";
+  $("qIntro").textContent = v.issues.length ? "" : "No open questions. You can still add or change something below and regenerate.";
+  $("qList").innerHTML = v.issues.map(q => `
+    <div class="q" data-q="${esc(q.id)}">
+      <div class="meta"><span class="tag ${q.source === "rule" ? "rule" : ""}">${esc(q.type || "Question")}</span>${q.source === "rule" ? "<span>found by rule check</span>" : ""}${+q.eur_at_stake ? `<span class="stake">±${eur(+q.eur_at_stake)}</span>` : ""}</div>
+      <div class="text">${esc(q.question)}</div>
+      ${q.why ? `<div class="why">${esc(q.why)}</div>` : ""}
+      <div class="opts">${q.options.map((o, i) => `<button class="opt" data-q="${esc(q.id)}" data-o="${i}" aria-pressed="${state.answers[q.id] === i}">${esc(o.label)}${i === q.default_index ? "<small>current assumption</small>" : ""}</button>`).join("")}
+        <button class="opt" data-q="${esc(q.id)}" data-o="other" aria-pressed="${state.answers[q.id] === "other"}">Other…</button></div>
+      <div class="other" ${state.answers[q.id] === "other" ? "" : "hidden"}><input type="text" id="oth-${esc(q.id)}" data-oq="${esc(q.id)}" placeholder="Type a price (e.g. 700 €), a number, or a note" value="${esc(state.others[q.id] || "")}"></div>
+    </div>`).join("");
+}
+const sigOf = l => JSON.stringify([l.catalog_id, l.qty, l.unit_override, l.sedation_hours, l.discount_pct, l.programme_free, l.range]);
+function renderDoc(v) {
+  const { plan, priced } = v;
+  const prev = state.versions[state.cur - 1];
+  const prevSig = new Map();
+  if (prev) prev.plan.stages.forEach(s => s.lines.forEach(l => prevSig.set(l.id, sigOf(l))));
+  let h = "";
+  plan.stages.forEach((s, si) => {
+    const ps = priced.stages[si];
+    h += `<h3><span class="sw" style="background:${stageColor(s.n)}"></span>Stage ${s.n}${s.title ? " · " + esc(s.title) : ""}<span class="when">${esc(s.timing || "")}</span></h3>
+    <table><thead><tr><th>Service</th><th>Teeth</th><th class="n">Qty</th><th class="n">Unit</th><th>Discounts</th><th class="n">Total</th></tr></thead><tbody>`;
+    s.lines.forEach((l, li) => {
+      const p = ps.lines[li];
+      const changed = prev && prevSig.get(l.id) !== sigOf(l);
+      const unit = p.source === "unpriced" ? "on request" : p.unitMin === p.unitMax ? eur(p.unitMin) : `${eur(p.unitMin)}–${eur(p.unitMax)}`;
+      const srcNote = p.source === "override" && p.listPrice != null ? `<span class="code">dictated · list ${eur(p.listPrice)}</span>` : p.source === "sedation" ? `<span class="code">${l.sedation_hours} h</span>` : p.source === "range" ? `<span class="code">estimate range</span>` : "";
+      h += `<tr class="${l.status === "assumed" ? "assumed" : ""} ${l.status === "unpriced" ? "unpriced" : ""} ${changed ? "changed" : ""}">
+        <td>${l.status === "assumed" ? `<span class="st">assumed</span> ` : l.status === "unpriced" ? `<span class="st unp">not on price list</span> ` : ""}${changed ? `<span class="st chg">changed</span> ` : ""}${esc(l.label)} <span class="code">${esc(l.catalog_id || "")}</span>${l.evidence ? `<span class="ev">“${esc(l.evidence)}”</span>` : ""}</td>
+        <td><span class="code">${esc((l.teeth || []).join(", ")) || "–"}</span></td>
+        <td class="n">${p.qty}</td><td class="n">${unit}${srcNote ? "<br>" + srcNote : ""}</td>
+        <td style="font-size:12px">${p.discounts.map(d => `−${d.pct}% ${esc(d.label)}`).join("<br>") || "–"}</td>
+        <td class="n">${p.source === "unpriced" ? "–" : range(p.netMin, p.netMax)}</td></tr>`;
+    });
+    h += `<tr class="sub-row"><td colspan="5">Stage ${s.n} subtotal</td><td class="n">${range(ps.netMin, ps.netMax)}</td></tr></tbody></table>`;
+  });
+  h += `<table style="margin-top:14px"><tbody>
+    <tr><td>Before discounts</td><td class="n">${range(priced.grossMin, priced.grossMax)}</td></tr>
+    <tr><td>Discounts &amp; programmes</td><td class="n">−${range(priced.grossMin - priced.netMin, priced.grossMax - priced.netMax)}</td></tr>
+    <tr class="sub-row"><td style="font-size:15px">Total to pay</td><td class="n" style="font-size:15px">${range(priced.netMin, priced.netMax)}</td></tr></tbody></table>`;
+  const notes = [];
+  if (v.changeLog.length) notes.push(`<div class="note"><b>Changes in v${v.n}</b><ul>${v.changeLog.map(c => `<li>${esc(c)}</li>`).join("")}</ul></div>`);
+  if (plan.clinical_notes.length) notes.push(`<div class="note"><b>Clinical notes (not billed)</b><ul>${plan.clinical_notes.map(c => `<li>${esc(c)}</li>`).join("")}</ul></div>`);
+  if (plan.modifiers.length) notes.push(`<div class="note"><b>Discounts applied</b><ul>${plan.modifiers.map(m => `<li>−${m.pct}% ${esc(m.label)} (${esc(Array.isArray(m.scope) ? m.scope.join(", ") : m.scope)})</li>`).join("")}</ul></div>`);
+  h += notes.length ? `<div class="notes">${notes.join("")}</div>` : "";
+  $("doc").innerHTML = h;
+}
+
+const STEPS_BUILD = ["Dictation", "Read notes", "Check rules", "Price", "PDF ready"];
+const STEPS_REGEN = ["Answers", "Update plan", "Check rules", "Price", "PDF v"];
+function setSteps(labels, activeIdx) {
+  $("steps").innerHTML = labels.map((s, i) => `<div class="step ${i < activeIdx ? "done" : i === activeIdx ? "run" : ""}"><div class="dot"></div>${esc(s)}</div>`).join("");
+}
+function showErr(t) { $("err").hidden = !t; $("err").textContent = t || ""; }
+const tick = (ms = 180) => new Promise(r => setTimeout(r, ms));
+function setBusy() { ["buildBtn", "regenBtn"].forEach(id => $(id).disabled = state.busy); $("buildBtn").textContent = state.busy ? "Working…" : "Build treatment plan"; }
+
+/* ---------------- optional Claude engine (only for viewers who have Claude) ---------------- */
+const CAT_TEXT = CATALOG.map(c => `${c.id} | ${c.name} | ${c.section} | ${c.price}`).join("\n");
+const RULES = `RULES
+1. catalog_id must be an ID from the price list, or null if the service is not on it. Never invent IDs.
+2. Split bundled sentences into separate lines.
+3. qty = number of teeth / implants / units. Put FDI tooth numbers in "teeth". "Segment N" means FDI quadrant N.
+4. A price dictated by the dentist goes in unit_override (EUR per unit); a range in range {"min","max"}. NEVER compute totals or discounted prices.
+5. Free of charge under a programme: programme_free = "<programme name>".
+6. Sedation: one line with catalog_id "SED-01" and sedation_hours.
+7. Patient-level discount: modifiers [{"id","label","pct","scope"}] with scope "all" or "stage:N". A single-line discount: discount_pct on that line.
+8. Non-billable clinical context goes in clinical_notes.
+9. If something is ambiguous, pick the most likely option, set status "assumed" and add a question. Clear lines: "resolved". Off-list services without price: "unpriced".
+10. At most 6 questions. Each: 2-4 short options with price effect, default_index = the option you assumed, eur_at_stake (number), type, short (2-3 words), why (one sentence).
+11. evidence = the exact short phrase from the dictation.
+JSON SHAPE (JSON only):
+{"patient":"","patient_note":"","modifiers":[],"clinical_notes":[],"stages":[{"n":1,"title":"","timing":"","lines":[{"id":"s1.l1","catalog_id":"IMP-09","label":"","qty":1,"teeth":[16],"status":"resolved","evidence":"","unit_override":null,"range":null,"discount_pct":null,"programme_free":null,"sedation_hours":null}]}],"questions":[{"id":"q1","type":"","short":"","question":"","why":"","line_ids":[],"eur_at_stake":0,"options":[{"label":""}],"default_index":0}]}`;
+const buildPrompt = note => `You are the Plan Extractor of a dental clinic's treatment-plan agent. Turn the dictation into a staged treatment plan as JSON, using ONLY services from the price list.\n\n${RULES}\n\nPRICE LIST (ID | service | section | EUR)\n${CAT_TEXT}\n\nDICTATION\n"""\n${note}\n"""`;
+const regenPrompt = (v, answers, extra) => { const p = { ...v.plan }; delete p.questions; return `Update this dental treatment plan with the dentist's answers. Apply every answer exactly. Same rules and JSON shape. Keep ids of unchanged lines. Only include questions still open. Add "change_log": short strings, one per change.\n\n${RULES}\n\nCURRENT PLAN\n${JSON.stringify(p)}\n\nANSWERS\n${answers.map(a => `- Q: ${a.q}\n  A: ${a.a}`).join("\n")}\n${extra ? `\nEXTRA INSTRUCTION\n${extra}\n` : ""}\nPRICE LIST\n${CAT_TEXT}`; };
+const sampleP = IN_CLAUDE ? window.claude.use("sample") : Promise.resolve(null);
+async function askClaude(prompt) {
+  const sample = await sampleP;
+  if (!sample) throw { code: "unavailable" };
+  try { return await sample.json(prompt, { modelTier: "default" }); }
+  catch (e) { if (e && e.text) { const m = String(e.text).match(/\{[\s\S]*\}/); if (m) return JSON.parse(m[0]); } throw e; }
+}
+function errCopy(e) {
+  const c = e && e.code;
+  if (c === "not_granted") return "Claude access was declined. Switch the engine back to Built-in.";
+  if (c === "rate_limited") return "Claude is busy right now. Wait a minute or use the Built-in engine.";
+  if (c === "cancelled") return "";
+  return "Claude couldn't build the plan (" + (c || e?.message || "error") + "). Try again or use the Built-in engine.";
+}
+
+/* ---------------- build & regenerate ---------------- */
+async function build() {
+  const note = $("note").value.trim();
+  if (!note) { showErr("Dictate or type a plan first, or pick a sample note."); return; }
+  if (state.busy) return;
+  showErr(""); state.busy = true; setBusy();
+  try {
+    let plan;
+    setSteps(STEPS_BUILD, 1); await tick();
+    if (state.engine === "claude") plan = await askClaude(buildPrompt(note));
+    else plan = localParse(note);
+    const smp = SAMPLES[state.sampleIdx];
+    if (plan && (!plan.patient || plan.patient === "Patient") && smp && smp.text.trim() === note) plan.patient = smp.name;
+    setSteps(STEPS_BUILD, 2); await tick();
+    state.versions = []; state.resolvedKeys = new Set(); state.example = false;
+    setSteps(STEPS_BUILD, 3); await tick();
+    addVersion(plan, [], state.engine);
+    setSteps(STEPS_BUILD, 5);
+  } catch (e) { console.error(e); setSteps(STEPS_BUILD, -1); showErr(state.engine === "claude" ? errCopy(e) : "Couldn't read this note: " + (e.message || e)); }
+  finally { state.busy = false; setBusy(); }
+}
+async function regen() {
+  const v = state.versions[state.cur];
+  if (!v || state.busy) return;
+  const extra = $("extra").value.trim();
+  showErr(""); state.busy = true; setBusy();
+  const labels = [...STEPS_REGEN]; labels[4] = "PDF v" + (state.versions.length + 1);
+  try {
+    setSteps(labels, 1); await tick();
+    let plan, log = [];
+    if (v.engine === "claude" && (await sampleP)) {
+      const answers = v.issues.map(q => { const a = state.answers[q.id]; const t = a === "other" ? (state.others[q.id] || "").trim() : q.options[a]?.label; return t ? { q: q.question, a: t } : null; }).filter(Boolean);
+      plan = await askClaude(regenPrompt(v, answers, extra));
+      log = Array.isArray(plan.change_log) ? plan.change_log : answers.map(a => `${a.q} → ${a.a}`);
+      v.issues.forEach(q => q.key && state.resolvedKeys.add(q.key));
+    } else {
+      plan = clone(v.plan);
+      for (const q of v.issues) {
+        const a = state.answers[q.id];
+        let label;
+        if (a === "other") { const t = (state.others[q.id] || "").trim(); if (!t) continue; label = t; applyOther(plan, q, t); }
+        else { const o = q.options[a]; if (!o) continue; label = o.label; applyOps(plan, o.ops); }
+        (q.line_ids || []).forEach(id => { const f = findLine(plan, id); if (f && f.l.status === "assumed") f.l.status = "resolved"; });
+        if (q.key) state.resolvedKeys.add(q.key);
+        log.push(`${q.short || q.type}: ${label}`);
+      }
+      if (extra) log.push(...addExtra(plan, extra));
+      plan.questions = [];
+    }
+    setSteps(labels, 3); await tick();
+    addVersion(plan, log, v.engine);
+    $("extra").value = "";
+    setSteps(labels, 5);
+  } catch (e) { console.error(e); setSteps(labels, -1); showErr(v.engine === "claude" ? errCopy(e) : "Couldn't apply the answers: " + (e.message || e)); }
+  finally { state.busy = false; setBusy(); }
+}
+
+/* ---------------- PDF ---------------- */
+function makePDF(v) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const { plan, priced } = v;
+  const E = n => nf.format(n) + " EUR", EC = c => E(c / 100), R = (a, b) => a === b ? EC(a) : `${EC(a)} - ${EC(b)}`;
+  const clean = s => String(s ?? "").replace(/[–—−]/g, "-").replace(/[“”]/g, '"').replace(/[’]/g, "'").replace(/€/g, "EUR").replace(/→/g, "->").replace(/·/g, "-").replace(/[^\x00-\xFF]/g, "");
+  doc.setFillColor(11, 122, 117); doc.rect(0, 0, 210, 28, "F");
+  doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(17); doc.text("Treatment plan & cost estimate", 14, 13);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+  doc.text(clean(`${plan.patient || "Patient"}${plan.patient_note ? "  -  " + plan.patient_note : ""}`), 14, 20);
+  doc.text(`Version ${v.n}  -  ${v.at.toLocaleDateString("en-GB")}`, 196, 20, { align: "right" });
+  doc.setTextColor(15, 42, 46);
+  let y = 36;
+  plan.stages.forEach((s, si) => {
+    const ps = priced.stages[si];
+    if (y > 255) { doc.addPage(); y = 18; }
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11.5);
+    doc.text(clean(`Stage ${s.n}${s.title ? " - " + s.title : ""}`), 14, y);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(90, 112, 116);
+    if (s.timing) doc.text(clean(s.timing), 196, y, { align: "right" });
+    doc.setTextColor(15, 42, 46);
+    const body = s.lines.map((l, li) => {
+      const p = ps.lines[li];
+      const unit = p.source === "unpriced" ? "on request" : p.unitMin === p.unitMax ? E(p.unitMin) : `${E(p.unitMin)} - ${E(p.unitMax)}`;
+      const name = clean(l.label) + (l.status === "assumed" ? "  *" : "") + (p.source === "sedation" ? ` (${l.sedation_hours} h)` : "") + (p.source === "override" && p.listPrice != null ? ` (list ${E(p.listPrice)})` : "");
+      return [name, clean((l.teeth || []).join(", ")) || "-", String(p.qty), unit, clean(p.discounts.map(d => `-${d.pct}% ${d.label}`).join("\n")) || "-", p.source === "unpriced" ? "-" : R(p.netMin, p.netMax)];
+    });
+    body.push([{ content: `Stage ${s.n} subtotal`, colSpan: 5, styles: { fontStyle: "bold" } }, { content: R(ps.netMin, ps.netMax), styles: { fontStyle: "bold", halign: "right" } }]);
+    doc.autoTable({ startY: y + 3, head: [["Service", "Teeth", "Qty", "Unit", "Discounts", "Total"]], body, theme: "grid",
+      styles: { fontSize: 8.4, cellPadding: 1.8, lineColor: [213, 224, 225], lineWidth: 0.2, textColor: [15, 42, 46] },
+      headStyles: { fillColor: [238, 243, 243], textColor: [90, 112, 116], fontStyle: "bold" },
+      columnStyles: { 0: { cellWidth: 66 }, 1: { cellWidth: 24 }, 2: { halign: "right", cellWidth: 10 }, 3: { halign: "right", cellWidth: 24 }, 4: { cellWidth: 32 }, 5: { halign: "right" } },
+      margin: { left: 14, right: 14 } });
+    y = doc.lastAutoTable.finalY + 9;
+  });
+  doc.autoTable({ startY: y, body: [["Before discounts", R(priced.grossMin, priced.grossMax)], ["Discounts & programmes", "-" + R(priced.grossMin - priced.netMin, priced.grossMax - priced.netMax)], [{ content: "Total to pay", styles: { fontStyle: "bold", fontSize: 11 } }, { content: R(priced.netMin, priced.netMax), styles: { fontStyle: "bold", fontSize: 11 } }]],
+    theme: "plain", styles: { fontSize: 9.5, cellPadding: 1.6, textColor: [15, 42, 46] }, columnStyles: { 1: { halign: "right" } }, margin: { left: 110, right: 14 } });
+  y = doc.lastAutoTable.finalY + 8;
+  const block = (title, items) => {
+    if (!items.length) return;
+    if (y > 255) { doc.addPage(); y = 18; }
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.text(title, 14, y); y += 5;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.8);
+    items.forEach(t => { const ls = doc.splitTextToSize("- " + clean(t), 182); if (y + ls.length * 4 > 285) { doc.addPage(); y = 18; } doc.text(ls, 14, y); y += ls.length * 4 + 0.6; });
+    y += 4;
+  };
+  block(`Changes in version ${v.n}`, v.changeLog);
+  block("Open questions (lines marked * are assumptions until confirmed)", v.issues.map(q => `${q.question}  Current assumption: ${q.options[q.default_index]?.label || "-"}`));
+  block("Clinical notes (not billed)", plan.clinical_notes);
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) { doc.setPage(i); doc.setFontSize(7.5); doc.setTextColor(120); doc.text("Prices from the clinic price list (EUR). Estimate generated by Dental Plan Agent; final treatment is decided by the dentist.", 14, 291); doc.text(`${i}/${pages}`, 196, 291, { align: "right" }); }
+  return doc;
+}
+
+/* ---------------- voice: Claude dictation when offered, otherwise the browser's own speech recognition ---------------- */
+let mic = null, micTarget = "note", listening = false;
+function micHint(t) { $("micHint").textContent = t; }
+function setListening(on) {
+  listening = on;
+  $("micBtn").classList.toggle("live", on && micTarget === "note");
+  $("micBtn2").classList.toggle("live", on && micTarget === "extra");
+  $("micBtn").setAttribute("aria-label", on && micTarget === "note" ? "Stop dictation" : "Start dictation");
+  $("micLabel").textContent = on && micTarget === "note" ? "Listening… press to stop" : "";
+  if (!on) $("partial").textContent = "";
+}
+function appendText(text) {
+  const el = $(micTarget === "note" ? "note" : "extra");
+  el.value = (el.value && !/\s$/.test(el.value) ? el.value + " " : el.value) + text;
+}
+function showMic(hint) { $("micBtn").hidden = false; $("micBtn2").hidden = false; micHint(hint); }
+function setupWebSpeech() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { micHint("Voice input works in Chrome and Edge. You can also type, or pick a sample note."); return; }
+  let rec = null;
+  mic = {
+    start() {
+      rec = new SR(); rec.lang = "en-US"; rec.continuous = true; rec.interimResults = true;
+      rec.onresult = e => { let interim = ""; for (let i = e.resultIndex; i < e.results.length; i++) { const r = e.results[i]; if (r.isFinal) appendText(r[0].transcript.trim()); else interim += r[0].transcript; } $("partial").textContent = interim; };
+      rec.onerror = e => { if (e.error === "not-allowed" || e.error === "service-not-allowed") micHint("The microphone is blocked here. Allow it in the browser's address bar, or type the plan."); setListening(false); };
+      rec.onend = () => setListening(false);
+      rec.start(); setListening(true);
+      return Promise.resolve();
+    },
+    stop() { try { rec && rec.stop(); } catch (_) {} return Promise.resolve(); }
+  };
+  showMic("Press the microphone and speak in English. Press it again to stop.");
+}
+(IN_CLAUDE ? window.claude.use("dictation") : Promise.resolve(null)).then(d => {
+  if (!d) { setupWebSpeech(); return; }
+  mic = { start: () => d.start(), stop: () => d.stop() };
+  d.onPartial(({ text }) => { $("partial").textContent = text; });
+  d.onFinal(({ text }) => { $("partial").textContent = ""; appendText(text); });
+  d.onState(({ state: s }) => setListening(s === "listening"));
+  showMic("Press the microphone and speak. Press it again to stop.");
+});
+function toggleMic(target) {
+  if (!mic) return;
+  if (listening) { mic.stop().catch(() => {}); return; }
+  micTarget = target;
+  try {
+    mic.start().catch(e => { if (e && e.code === "not_granted") micHint("Microphone access was declined. You can still type the plan."); else micHint("Couldn't start the microphone. Press it again to retry."); setListening(false); });
+  } catch (e) { micHint("Couldn't start the microphone here. You can type the plan instead."); }
+}
+
+/* ---------------- capabilities: Claude engine toggle, file save ---------------- */
+sampleP.then(s => { state.claudeOK = !!s; renderEngine(); });
+const dlP = IN_CLAUDE ? window.claude.use("downloads") : Promise.resolve(null);
+
+/* ---------------- events ---------------- */
+$("micBtn").addEventListener("click", () => toggleMic("note"));
+$("micBtn2").addEventListener("click", () => toggleMic("extra"));
+$("buildBtn").addEventListener("click", build);
+$("regenBtn").addEventListener("click", regen);
+$("clearBtn").addEventListener("click", () => { $("note").value = ""; state.sampleIdx = -1; renderSamples(); $("note").focus(); });
+$("samples").addEventListener("click", e => { const b = e.target.closest("[data-i]"); if (!b) return; state.sampleIdx = +b.dataset.i; $("note").value = SAMPLES[state.sampleIdx].text; renderSamples(); });
+$("engineRow").addEventListener("click", e => { const b = e.target.closest("[data-engine]"); if (!b) return; state.engine = b.dataset.engine; renderEngine(); });
+$("versions").addEventListener("click", e => { const b = e.target.closest("[data-v]"); if (!b) return; state.cur = +b.dataset.v; render(); });
+$("qList").addEventListener("click", e => {
+  const b = e.target.closest(".opt"); if (!b) return;
+  state.answers[b.dataset.q] = b.dataset.o === "other" ? "other" : +b.dataset.o;
+  renderQuestions(state.versions[state.cur]);
+  if (b.dataset.o === "other") document.getElementById("oth-" + b.dataset.q)?.focus();
+});
+$("qList").addEventListener("input", e => { if (e.target.dataset.oq) state.others[e.target.dataset.oq] = e.target.value; });
+$("pdfBtn").addEventListener("click", async () => {
+  const v = state.versions[state.cur]; if (!v) return;
+  const filename = `${(v.plan.patient || "patient").replace(/[^a-z0-9]+/gi, "_")}_treatment_plan_v${v.n}.pdf`;
+  $("pdfHint").hidden = true;
+  let doc;
+  try { doc = makePDF(v); } catch (e) { $("pdfHint").hidden = false; $("pdfHint").textContent = "Couldn't build the PDF: " + (e.message || e); return; }
+  const d = await dlP;
+  if (d) {
+    try { await d.save({ filename, data: doc.output("blob") }); }
+    catch (e) { if (e && e.code !== "declined") { $("pdfHint").hidden = false; $("pdfHint").textContent = "Couldn't save the PDF (" + (e.code || "error") + "). Try again."; } }
+  } else {
+    doc.save(filename);
+    if (IN_CLAUDE) { $("pdfHint").hidden = false; $("pdfHint").textContent = "If nothing downloaded, this view blocks downloads. Open the page in a full browser tab."; }
+  }
+});
+
+/* ---------------- boot: open with a real example built by the built-in engine ---------------- */
+renderSamples();
+renderEngine();
+$("note").value = SAMPLES[2].text;
+addVersion(Object.assign(localParse(SAMPLES[2].text), { patient: "Patient 3" }), [], "local");
+setSteps(STEPS_BUILD, 5);
+
+</script>
+</body></html>
