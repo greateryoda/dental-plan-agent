@@ -79,8 +79,11 @@ textarea { min-height: 220px; resize: vertical; font-size: 13.5px; }
 .kpi .v.amber { color: var(--amber); }
 
 /* odontogram */
-.odo-wrap { overflow-x: auto; margin-top: 14px; }
-.odo { display: grid; grid-template-columns: repeat(16, 30px); gap: 3px; width: max-content; }
+.odo-wrap { overflow-x: auto; }
+.odo { display: grid; grid-template-columns: 70px repeat(16, 30px); gap: 3px; width: max-content; align-items: center; }
+.odo .jaw { font-size: 11px; color: var(--muted); }
+.odo .side { grid-column: span 8; font-size: 11px; color: var(--muted); text-align: center; border-bottom: 1px solid var(--line); padding-bottom: 2px; }
+.odo-title { font-size: 12.5px; font-weight: 600; margin: 16px 0 6px; }
 .odo .t { height: 30px; border: 1px solid var(--line); border-radius: 6px 6px 9px 9px; font-family: var(--mono); font-size: 10.5px; display: flex; align-items: center; justify-content: center; color: var(--muted); background: var(--surface); }
 .odo .t.lower { border-radius: 9px 9px 6px 6px; }
 .odo .t.mid { margin-right: 8px; }
@@ -192,7 +195,8 @@ details.how ol { padding-left: 18px; }
         </div>
         <div class="example" id="exampleBanner" hidden>Patient 3 is loaded as an example. Pick another patient, or dictate your own note, and press <b>Build treatment plan</b>.</div>
         <div class="summary" id="summary"></div>
-        <div class="odo-wrap"><div class="odo" id="odo" aria-label="Teeth involved (FDI)"></div></div>
+        <p class="odo-title">Dental chart (FDI numbers) · highlighted teeth are treated in this plan</p>
+        <div class="odo-wrap"><div class="odo" id="odo" aria-label="Dental chart, FDI numbering"></div></div>
         <div class="legend" id="legend"></div>
         <p class="hint" id="pdfHint" hidden></p>
       </section>
@@ -858,8 +862,10 @@ function renderOdo(plan) {
   if (plan) for (const s of plan.stages) for (const l of s.lines) for (const t of l.teeth || []) { (map[t] = map[t] || { n: s.n, items: [] }).items.push(`S${s.n}: ${l.label}`); }
   const upper = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28], lower = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
   const cell = (t, low) => { const m = map[t]; const mid = t % 10 === 1 && (Math.floor(t / 10) === 1 || Math.floor(t / 10) === 4); return `<div class="t ${low ? "lower" : ""} ${mid ? "mid" : ""} ${m ? "on" : ""}" ${m ? `style="background:${stageColor(m.n)}" title="${esc(t + " — " + m.items.join("; "))}"` : `title="${t}"`}>${t}</div>`; };
-  $("odo").innerHTML = upper.map(t => cell(t)).join("") + `<div class="gap"></div>` + lower.map(t => cell(t, true)).join("");
-  $("legend").innerHTML = plan ? `<span>Teeth in the plan (FDI), coloured by first stage:</span>` + plan.stages.map(s => `<span><i style="background:${stageColor(s.n)}"></i>Stage ${s.n}</span>`).join("") : "";
+  $("odo").innerHTML = `<span></span><span class="side">Patient's right</span><span class="side">Patient's left</span>`
+    + `<span class="jaw">Upper jaw</span>` + upper.map(t => cell(t)).join("")
+    + `<span class="jaw">Lower jaw</span>` + lower.map(t => cell(t, true)).join("");
+  $("legend").innerHTML = plan ? `<span>Colour = stage in which the tooth is treated. Hover a tooth to see its services.</span>` + plan.stages.map(s => `<span><i style="background:${stageColor(s.n)}"></i>Stage ${s.n}</span>`).join("") : "";
 }
 function renderQuestions(v) {
   const isLatest = state.cur === state.versions.length - 1;
