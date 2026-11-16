@@ -204,8 +204,9 @@ details.how ol { padding-left: 18px; }
       <section class="panel qpanel" id="qPanel" hidden>
         <div class="qhead">
           <p class="label" style="margin:0;color:var(--amber)">3 · Clarifying questions</p>
-          <span class="hint" id="qCount"></span>
+          <div class="row"><span class="hint" id="qCount"></span><button class="btn amber" id="regenTop">Apply answers &amp; regenerate PDF</button></div>
         </div>
+        <p class="hint" style="margin:6px 0 0">Pick an answer for each question (or keep the current assumption), optionally type a change at the bottom, then press the orange button.</p>
         <p class="hint" id="qIntro"></p>
         <div id="qList"></div>
         <div class="other">
@@ -1006,7 +1007,7 @@ function setSteps(labels, activeIdx) {
 }
 function showErr(t) { $("err").hidden = !t; $("err").textContent = t || ""; }
 const tick = (ms = 180) => new Promise(r => setTimeout(r, ms));
-function setBusy() { ["buildBtn", "regenBtn"].forEach(id => $(id).disabled = state.busy); $("buildBtn").textContent = state.busy ? "Working…" : "Build treatment plan"; }
+function setBusy() { ["buildBtn", "regenBtn", "regenTop"].forEach(id => $(id).disabled = state.busy); $("buildBtn").textContent = state.busy ? "Working…" : "Build treatment plan"; }
 
 /* ---------------- optional Claude engine (only for viewers who have Claude) ---------------- */
 const CAT_TEXT = CATALOG.map(c => `${c.id} | ${c.name} | ${c.section} | ${c.price}`).join("\n");
@@ -1094,6 +1095,7 @@ async function regen() {
     addVersion(plan, log, v.engine);
     $("extra").value = "";
     setSteps(labels, 5);
+    $("sumPanel").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (e) { console.error(e); setSteps(labels, -1); showErr(v.engine === "claude" ? errCopy(e) : "Couldn't apply the answers: " + (e.message || e)); }
   finally { state.busy = false; setBusy(); }
 }
@@ -1212,6 +1214,7 @@ $("micBtn").addEventListener("click", () => toggleMic("note"));
 $("micBtn2").addEventListener("click", () => toggleMic("extra"));
 $("buildBtn").addEventListener("click", build);
 $("regenBtn").addEventListener("click", regen);
+$("regenTop").addEventListener("click", regen);
 $("clearBtn").addEventListener("click", () => { $("note").value = ""; state.sampleIdx = -1; renderSamples(); $("note").focus(); });
 $("samples").addEventListener("click", e => { const b = e.target.closest("[data-i]"); if (!b) return; state.sampleIdx = +b.dataset.i; $("note").value = SAMPLES[state.sampleIdx].text; renderSamples(); });
 $("engineRow").addEventListener("click", e => { const b = e.target.closest("[data-engine]"); if (!b) return; state.engine = b.dataset.engine; renderEngine(); });
