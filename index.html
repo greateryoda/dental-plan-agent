@@ -209,9 +209,9 @@ details.how ol { padding-left: 18px; }
         <p class="hint" id="qIntro"></p>
         <div id="qList"></div>
         <div class="other">
-          <label class="hint" for="extra">Anything else to change? (optional)</label>
+          <label class="hint" for="extra">Change anything else by voice or text (optional): prices, discounts, quantities, implant system, sedation, remove or add services.</label>
           <div class="row" style="flex-wrap:nowrap">
-            <input type="text" id="extra" placeholder="e.g. add a surgical guide for 3–4 implants">
+            <input type="text" id="extra" placeholder="e.g. change implant price to 800 € · remove sedation · 10% discount on crowns · add a surgical guide">
             <button class="btn mic" id="micBtn2" aria-label="Dictate an extra instruction" hidden>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
             </button>
@@ -790,7 +790,87 @@ function addExtra(plan, extra) {
   if (!target) return added;
   parsed.stages.flatMap(s => s.lines).forEach((l, i) => { l.id = `s${target.n}.x${Date.now() % 10000}${i}`; l.status = l.status === "unpriced" ? "unpriced" : "resolved"; target.lines.push(l); added.push(`Added to stage ${target.n}: ${l.label} × ${l.qty}`); });
   parsed.clinical_notes.forEach(n => plan.clinical_notes.push(n));
+  if (!added.length && !parsed.clinical_notes.length) added.push(`Not understood: “${extra}”`);
+  else if (!added.length) added.push(`Noted: ${parsed.clinical_notes.join("; ")}`);
   return added;
+}
+
+/* ---------------- revision commands ("change implant price to 800", "remove sedation", ...) ---------------- */
+const KIND_LINE = {
+  implant: l => isImplantProduct(CAT[l.catalog_id]?.name || ""),
+  crown: l => /zirconia crown/i.test(CAT[l.catalog_id]?.name || l.label),
+  temp: l => /temporary crown/i.test(CAT[l.catalog_id]?.name || l.label),
+  sed: l => (l.catalog_id || "").startsWith("SED"),
+  hyg: l => /hygiene/i.test(l.label) && !/kit/i.test(l.label), prehyg: l => /hygiene/i.test(l.label) && !/kit/i.test(l.label),
+  bone: l => /bone|lamina/i.test(l.label)
+};
+function linesFor(plan, phrase) {
+  const p = normText(phrase).toLowerCase();
+  const stageN = +((p.match(/stage\s*(\d+)/) || [])[1] || 0);
+  const tooth = +((p.match(/\b(?:tooth|site)\s*([1-4][1-8])\b/) || [])[1] || 0);
+  let kinds = detectKinds(phrase).map(k => k.k);
+  if (kinds.includes("temp")) kinds = kinds.filter(k => k !== "crown" && k !== "implant");
+  if (kinds.length > 1) kinds = kinds.filter(k => k !== "implant");
+  const out = [];
+  for (const s of plan.stages) {
+    if (stageN && s.n !== stageN) continue;
+    for (const l of s.lines) {
+      if (tooth && !(l.teeth || []).includes(tooth)) continue;
+      let hit = false;
+      if (kinds.length) hit = kinds.some(k => KIND_LINE[k] ? KIND_LINE[k](l) : (KINDS.find(x => x[0] === k)?.[1].test(l.label) && !(k === "crown" && /temporary/i.test(l.label))));
+      else { const w = (p.match(/[a-z]{4,}/g) || []).filter(x => !["change", "price", "remove", "stage", "tooth", "with", "from", "plan", "line", "delete", "instead"].includes(x)); hit = w.length > 0 && w.some(x => l.label.toLowerCase().includes(x)); }
+      if (!hit && !kinds.length && /\b(all|everything|whole|total)\b/.test(p)) hit = true;
+      if (hit) out.push({ s, l });
+    }
+  }
+  return out;
+}
+function revise(plan, text) {
+  const log = [], rest = [];
+  const cmds = normText(text).split(/(?<=[.!?])\s+|;\s*|\s+and also\s+|\s+then\s+/i).map(c => c.trim().replace(/^(?:also|and|please|then),?\s+/i, "").replace(/[.!]$/, "")).filter(Boolean);
+  const names = hits => [...new Set(hits.map(h => h.l.label))].join(", ");
+  for (const cmd of cmds) {
+    const c = cmd.toLowerCase();
+    let m, hits;
+    const miss = what => log.push(`Couldn't find “${what}” in the plan`);
+    if ((m = c.match(/^(?:remove|delete|drop|cancel|take out)\s+(?:the\s+)?(.+)$/)) || (m = c.match(/^no\s+(?!discounts?\b)(.+)$/))) {
+      hits = linesFor(plan, m[1]); if (!hits.length) { miss(m[1]); continue; }
+      hits.forEach(({ s, l }) => s.lines.splice(s.lines.indexOf(l), 1)); log.push(`Removed: ${names(hits)}`);
+    } else if ((m = c.match(/(?:change|set|make|update)?\s*(?:the\s+)?(?:price|cost)\s+(?:of|for)\s+(?:the\s+)?(.+?)\s+(?:to|at|=)\s*€?\s*([\d.,]+)/)) || (m = c.match(/^(?:change|set|make)\s+(?:the\s+)?(.+?)\s+(?:price\s+)?(?:to|at)\s*€?\s*([\d.,]+)\s*(?:€|eur|euros?)/)) || (m = c.match(/^(.+?)\s+(?:price\s+)?(?:at|for|costs?)\s*€?\s*([\d.,]+)\s*(?:€|eur|euros?)(?:\s*each)?$/))) {
+      const v = +m[2].replace(/,/g, ""); hits = linesFor(plan, m[1]); if (!hits.length) { miss(m[1]); continue; }
+      hits.forEach(({ l }) => { l.unit_override = v; delete l.range; l.status = l.status === "unpriced" ? "resolved" : l.status; }); log.push(`Price of ${names(hits)} → ${eur(v)} each`);
+    } else if ((m = c.match(/(\d+(?:\.\d+)?)\s*%\s*(?:discount|off)\s*(?:on|to|for)?\s*(?:the\s+)?(.*)$/)) || (m = c.match(/discount\s+(?:of\s+)?(\d+(?:\.\d+)?)\s*%\s*(?:on|to|for)?\s*(?:the\s+)?(.*)$/))) {
+      const pct = +m[1], target = (m[2] || "").trim();
+      if (!target || /^(everything|all|the whole( plan| estimate)?|whole plan|total|the total|plan|estimate)$/.test(target)) {
+        plan.modifiers.push({ id: "m" + (plan.modifiers.length + 1), label: "Discount", pct, scope: "all" }); log.push(`−${pct}% discount on the whole plan`); continue;
+      }
+      hits = linesFor(plan, target); if (!hits.length) { miss(target); continue; }
+      hits.forEach(({ l }) => { l.discount_pct = pct; }); log.push(`−${pct}% discount on ${names(hits)}`);
+    } else if ((m = c.match(/(?:no|remove (?:the )?|without (?:any )?)discounts?(?:\s+(?:on|for)\s+(?:the\s+)?(.+))?/))) {
+      if (!m[1]) { plan.modifiers = []; plan.stages.forEach(s => s.lines.forEach(l => delete l.discount_pct)); log.push("All discounts removed"); continue; }
+      hits = linesFor(plan, m[1]); hits.forEach(({ l }) => delete l.discount_pct); log.push(`Discount removed from ${names(hits) || m[1]}`);
+    } else if ((m = c.match(/(?:sedation)\s*(?:for|to|of)?\s*(\d+(?:\.\d+)?)\s*(?:h\b|hours?)/)) || (m = c.match(/(\d+(?:\.\d+)?)\s*(?:h\b|hours?)\s+(?:of\s+)?sedation/))) {
+      hits = linesFor(plan, "sedation");
+      if (hits.length) hits.forEach(({ l }) => { l.sedation_hours = +m[1]; l.status = "resolved"; });
+      else mkLine(plan.stages[0], K.sed, { id: `s1.x${Date.now() % 10000}`, qty: 1, sedation_hours: +m[1], evidence: cmd });
+      log.push(`Sedation → ${m[1]} h (${eur(sedationUnit(+m[1]))})`);
+    } else if ((m = c.match(/(?:use|switch to|change to|go with|make (?:them|it|the implants))\s+(straumann|osstem|korean|megagen any\s?one|anyone|megagen|nobel)(?:\s+implants?)?/)) || (m = c.match(/(straumann|osstem|megagen|nobel)\s+(?:implants?\s+)?instead/))) {
+      const b = brandIn(m[1]); const imps = linesFor(plan, "implants"), crs = linesFor(plan, "zirconia crowns");
+      imps.forEach(({ l }) => { l.catalog_id = b.impl; l.label = CAT[b.impl].name; l.status = "resolved"; });
+      crs.forEach(({ l }) => { l.catalog_id = b.crown; l.label = CAT[b.crown].name; });
+      log.push(`Implant system → ${b.name}${crs.length ? " (crowns too)" : ""}`);
+    } else if ((m = c.match(/(?:change|set|make)\s+(?:the\s+)?(?:number|quantity|qty|count)\s+of\s+(?:the\s+)?(.+?)\s+to\s+(\d+)/)) || (m = c.match(/^(\d+)\s+(.+?)\s+instead(?:\s+of\s+\d+)?$/))) {
+      const [target, n] = /^\d/.test(m[1]) ? [m[2], +m[1]] : [m[1], +m[2]];
+      hits = linesFor(plan, target); if (!hits.length) { miss(target); continue; }
+      hits.forEach(({ l }) => { l.qty = n; }); log.push(`Quantity of ${names(hits)} → ${n}`);
+    } else if ((m = c.match(/^move\s+(?:the\s+)?(.+?)\s+to\s+stage\s*(\d+)/))) {
+      const to = plan.stages.find(s => s.n === +m[2]); hits = linesFor(plan, m[1]);
+      if (!to || !hits.length) { miss(m[1]); continue; }
+      hits.forEach(({ s, l }) => { s.lines.splice(s.lines.indexOf(l), 1); to.lines.push(l); }); log.push(`Moved ${names(hits)} to stage ${to.n}`);
+    } else rest.push(cmd.replace(/^(?:add|also add|include|plus)\s+/i, ""));
+  }
+  if (rest.length) log.push(...addExtra(plan, rest.join(". ")));
+  return log;
 }
 
 /* ---------------- state ---------------- */
@@ -1007,7 +1087,7 @@ async function regen() {
         if (q.key) state.resolvedKeys.add(q.key);
         log.push(`${q.short || q.type}: ${label}`);
       }
-      if (extra) log.push(...addExtra(plan, extra));
+      if (extra) log.push(...revise(plan, extra));
       plan.questions = [];
     }
     setSteps(labels, 3); await tick();
